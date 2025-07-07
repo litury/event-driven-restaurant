@@ -1,4 +1,4 @@
-name: Deploy Static Site
+name: Deploy Real Project
 
 on:
   push:
@@ -24,62 +24,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create simple index.html
-        run: |
-          mkdir -p dist
-          cat > dist/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="ru">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>CEP Restaurant Demo</title>
-              <style>
-                  body { 
-                      font-family: system-ui, -apple-system, sans-serif; 
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white; 
-                      margin: 0; 
-                      padding: 2rem;
-                      min-height: 100vh;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      text-align: center;
-                  }
-                  .container { max-width: 600px; }
-                  h1 { font-size: 3rem; margin-bottom: 1rem; }
-                  p { font-size: 1.2rem; opacity: 0.9; line-height: 1.6; }
-                  .status { 
-                      background: rgba(255,255,255,0.1); 
-                      padding: 1rem; 
-                      border-radius: 8px; 
-                      margin-top: 2rem;
-                  }
-                  .emoji { font-size: 4rem; margin-bottom: 1rem; }
-                  a { color: #ffd700; text-decoration: none; }
-                  a:hover { text-decoration: underline; }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="emoji">🍽️</div>
-                  <h1>CEP Restaurant Demo</h1>
-                  <p>Демонстрация событийной системы ресторана на Vue 3 + TypeScript</p>
-                  <div class="status">
-                      <p><strong>✅ Проект работает локально отлично!</strong></p>
-                      <p>⚠️ Деплой временно приостановлен из-за Tailwind CSS 4 alpha</p>
-                      <p>🔧 Скоро исправим и выложим полную версию</p>
-                  </div>
-                  <p style="margin-top: 2rem;">
-                      <a href="https://github.com/litury/event-driven-restaurant">
-                          📁 Исходный код на GitHub
-                      </a>
-                  </p>
-              </div>
-          </body>
-          </html>
-          EOF
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
