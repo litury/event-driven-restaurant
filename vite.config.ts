@@ -44,12 +44,5 @@ export default defineConfig(({ command }) => ({
                 main: resolve(__dirname, 'src/web/index.html')
             }
         }
-    },
-
-    // Настройки для тестов
-    test: {
-        environment: 'jsdom',
-        globals: true,
-        setupFiles: ['./src/test-setup.ts']
     }
 })) 
