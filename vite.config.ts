@@ -19,7 +19,7 @@ export default defineConfig(({ command }) => ({
     root: 'src/web',
 
     // GitHub Pages base path (название репозитория)
-    base: command === 'build' ? '/event-D-A/' : '/',
+    base: command === 'build' ? '/event-driven-restaurant/' : '/',
 
     // Настройки разработки
     server: {

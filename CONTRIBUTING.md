@@ -8,8 +8,8 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/username/event-D-A.git
-cd event-D-A
+git clone https://github.com/litury/event-driven-restaurant.git
+cd event-driven-restaurant
 
 # Установка зависимостей
 npm install
@@ -27,7 +27,7 @@ npm test
 
 Перед началом работы:
 
-- Проверьте существующие [Issues](https://github.com/username/event-D-A/issues)
+- Проверьте существующие [Issues](https://github.com/litury/event-driven-restaurant/issues)
 - Создайте новый Issue с описанием проблемы или предложения
 - Дождитесь обсуждения и одобрения
 
@@ -37,8 +37,8 @@ npm test
 # Форк репозитория через GitHub UI
 
 # Клонирование вашего форка
-git clone https://github.com/YOUR_USERNAME/event-D-A.git
-cd event-D-A
+git clone https://github.com/YOUR_USERNAME/event-driven-restaurant.git
+cd event-driven-restaurant
 
 # Создание feature ветки
 git checkout -b feature/amazing-feature
@@ -221,8 +221,8 @@ describe("ZipProcessor", () => {
 
 ## ❓ Вопросы и поддержка
 
-- 🐛 **Баги**: создайте [Issue](https://github.com/username/event-D-A/issues)
-- 💡 **Идеи**: создайте [Discussion](https://github.com/username/event-D-A/discussions)
+- 🐛 **Баги**: создайте [Issue](https://github.com/litury/event-driven-restaurant/issues)
+- 💡 **Идеи**: создайте [Discussion](https://github.com/litury/event-driven-restaurant/discussions)
 - 📧 **Прямой контакт**: через GitHub профиль
 
 ---

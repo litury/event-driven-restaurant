@@ -36,12 +36,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/username/event-D-A.git"
+    "url": "https://github.com/litury/event-driven-restaurant.git"
   },
   "bugs": {
-    "url": "https://github.com/username/event-D-A/issues"
+    "url": "https://github.com/litury/event-driven-restaurant/issues"
   },
-  "homepage": "https://username.github.io/event-D-A/",
+  "homepage": "https://litury.github.io/event-driven-restaurant/",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
