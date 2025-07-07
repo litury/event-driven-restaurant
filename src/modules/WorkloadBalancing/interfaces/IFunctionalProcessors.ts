@@ -38,13 +38,26 @@ export type WorkerProcessorFunction = (
 ) => Promise<void>
 
 /**
+ * Интерфейс контроллера генератора работы
+ */
+export interface IWorkGenerator {
+    /** Запускает генерацию работ */
+    startAsync(): Promise<void>
+    /** Останавливает генерацию работ */
+    stopAsync(): Promise<void>
+    /** Возвращает текущий счетчик работ */
+    getCurrentWorkCount(): number
+}
+
+/**
  * Функция генератора работы
- * Создает новые задания с интервалом
+ * Создает контроллер для управления генерацией работ
  */
 export type WorkGeneratorFunction = (
     workQueue: IEventQueue<IWorkItem>,
-    intervalMs: number
-) => Promise<void>
+    intervalMs?: number,
+    maxWorks?: number
+) => IWorkGenerator
 
 /**
  * Конфигурация системы балансировки

@@ -1,9 +1,11 @@
 import type { IEventQueue } from '../interfaces'
 
 /**
- * Тесты для IEventQueue
+ * Тесты для IEventQueue (переписано для Vitest)
  * Автор: "Сделай тесты, 20 или 10 тестов, на всякие хитрые комбинации"
  * Используем given-when-then подход
+ * 
+ * VITEST: Jest-совместимый API, но в 10-20 раз быстрее!
  */
 
 describe('IEventQueue', () => {

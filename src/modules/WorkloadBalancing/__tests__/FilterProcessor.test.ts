@@ -1,9 +1,12 @@
 import type { IEventQueue, IWorkItem, IWorkAssignment } from '../interfaces'
 
 /**
- * Тесты для фильтра-процессора
+ * Тесты для фильтра-процессора (переписано для Vitest)
  * Автор: "Фильтр получает назначенную работу и отдает это в очереди на двух рабочих"
  * Используем given-when-then подход
+ * 
+ * VITEST: Используем глобальные функции describe, it, expect, beforeEach
+ * Совместимо с Jest API, но работает намного быстрее
  */
 
 describe('FilterProcessor', () => {
@@ -56,18 +59,11 @@ describe('FilterProcessor', () => {
         return async (): Promise<void> => {
             const assignment = await assignmentQueue.dequeueAsync()
 
-            // Распределяем по workerId
-            if (assignment.workerId === 1) {
-                await worker1Queue.enqueueAsync(assignment.workItem)
-            } else if (assignment.workerId === 2) {
-                await worker2Queue.enqueueAsync(assignment.workItem)
-            } else {
-                // Для других рабочих используем модуль для распределения
-                // Исправлена логика для отрицательных чисел: -1, -3, -5... -> worker1
-                const isOdd = Math.abs(assignment.workerId) % 2 === 1
-                const targetQueue = isOdd ? worker1Queue : worker2Queue
-                await targetQueue.enqueueAsync(assignment.workItem)
-            }
+            // Распределяем по НОМЕРУ РАБОТЫ (workItem):
+            // четные числа → рабочий 1, нечетные → рабочий 2
+            const isEven = assignment.workItem % 2 === 0
+            const targetQueue = isEven ? worker1Queue : worker2Queue
+            await targetQueue.enqueueAsync(assignment.workItem)
         }
     }
 
@@ -78,10 +74,10 @@ describe('FilterProcessor', () => {
     })
 
     describe('Базовое распределение работы', () => {
-        it('должен направлять работу рабочему 1', async () => {
-            // given - назначение для рабочего 1
+        it('должен направлять четные работы рабочему 1', async () => {
+            // given - назначение с четной работой
             const assignment: IWorkAssignment = {
-                workItem: 42,
+                workItem: 42, // четное число
                 workerId: 1
             }
             await assignmentQueue.enqueueAsync(assignment)
@@ -90,7 +86,7 @@ describe('FilterProcessor', () => {
             const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
             await filterProcessor()
 
-            // then - работа направлена рабочему 1
+            // then - работа направлена рабочему 1 (четные числа)
             expect(worker1Queue.size()).toBe(1)
             expect(worker2Queue.size()).toBe(0)
 
@@ -98,10 +94,10 @@ describe('FilterProcessor', () => {
             expect(workItem).toBe(42)
         })
 
-        it('должен направлять работу рабочему 2', async () => {
-            // given - назначение для рабочего 2
+        it('должен направлять нечетные работы рабочему 2', async () => {
+            // given - назначение с нечетной работой
             const assignment: IWorkAssignment = {
-                workItem: 17,
+                workItem: 17, // нечетное число
                 workerId: 2
             }
             await assignmentQueue.enqueueAsync(assignment)
@@ -110,7 +106,7 @@ describe('FilterProcessor', () => {
             const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
             await filterProcessor()
 
-            // then - работа направлена рабочему 2
+            // then - работа направлена рабочему 2 (нечетные числа)
             expect(worker1Queue.size()).toBe(0)
             expect(worker2Queue.size()).toBe(1)
 
@@ -118,13 +114,13 @@ describe('FilterProcessor', () => {
             expect(workItem).toBe(17)
         })
 
-        it('должен обрабатывать несколько назначений', async () => {
-            // given - несколько назначений
+        it('должен правильно распределять смешанные работы', async () => {
+            // given - смешанные четные и нечетные работы
             const assignments: IWorkAssignment[] = [
-                { workItem: 1, workerId: 1 },
-                { workItem: 2, workerId: 2 },
-                { workItem: 3, workerId: 1 },
-                { workItem: 4, workerId: 2 }
+                { workItem: 2, workerId: 1 },  // четное → рабочий 1
+                { workItem: 3, workerId: 2 },  // нечетное → рабочий 2
+                { workItem: 4, workerId: 1 },  // четное → рабочий 1
+                { workItem: 5, workerId: 2 }   // нечетное → рабочий 2
             ]
 
             for (const assignment of assignments) {
@@ -138,9 +134,9 @@ describe('FilterProcessor', () => {
                 await filterProcessor()
             }
 
-            // then - работы правильно распределены
-            expect(worker1Queue.size()).toBe(2)
-            expect(worker2Queue.size()).toBe(2)
+            // then - работы правильно распределены по четности
+            expect(worker1Queue.size()).toBe(2) // работы 2, 4
+            expect(worker2Queue.size()).toBe(2) // работы 3, 5
 
             // проверяем содержимое очередей
             const worker1Items = []
@@ -151,8 +147,65 @@ describe('FilterProcessor', () => {
             worker2Items.push(await worker2Queue.dequeueAsync())
             worker2Items.push(await worker2Queue.dequeueAsync())
 
-            expect(worker1Items).toEqual([1, 3])
-            expect(worker2Items).toEqual([2, 4])
+            expect(worker1Items).toEqual([2, 4]) // четные
+            expect(worker2Items).toEqual([3, 5]) // нечетные
+        })
+
+        it('должен обрабатывать ноль как четное число', async () => {
+            // given - работа с номером 0
+            const assignment: IWorkAssignment = {
+                workItem: 0, // ноль - четное число
+                workerId: 2
+            }
+            await assignmentQueue.enqueueAsync(assignment)
+
+            // when - обрабатываем
+            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
+            await filterProcessor()
+
+            // then - ноль направлен рабочему 1 (четные числа)
+            expect(worker1Queue.size()).toBe(1)
+            expect(worker2Queue.size()).toBe(0)
+
+            const workItem = await worker1Queue.dequeueAsync()
+            expect(workItem).toBe(0)
+        })
+
+        it('должен обрабатывать несколько назначений', async () => {
+            // given - несколько назначений с разными номерами работ
+            const assignments: IWorkAssignment[] = [
+                { workItem: 1, workerId: 1 }, // нечетное → рабочий 2
+                { workItem: 2, workerId: 2 }, // четное → рабочий 1
+                { workItem: 3, workerId: 1 }, // нечетное → рабочий 2
+                { workItem: 4, workerId: 2 }  // четное → рабочий 1
+            ]
+
+            for (const assignment of assignments) {
+                await assignmentQueue.enqueueAsync(assignment)
+            }
+
+            // when - обрабатываем все назначения
+            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
+
+            for (let i = 0; i < assignments.length; i++) {
+                await filterProcessor()
+            }
+
+            // then - работы правильно распределены по четности
+            expect(worker1Queue.size()).toBe(2) // работы 2, 4 (четные)
+            expect(worker2Queue.size()).toBe(2) // работы 1, 3 (нечетные)
+
+            // проверяем содержимое очередей
+            const worker1Items = []
+            worker1Items.push(await worker1Queue.dequeueAsync())
+            worker1Items.push(await worker1Queue.dequeueAsync())
+
+            const worker2Items = []
+            worker2Items.push(await worker2Queue.dequeueAsync())
+            worker2Items.push(await worker2Queue.dequeueAsync())
+
+            expect(worker1Items).toEqual([2, 4]) // четные
+            expect(worker2Items).toEqual([1, 3]) // нечетные
         })
 
         it('должен соблюдать FIFO порядок в очередях рабочих', async () => {
@@ -226,161 +279,32 @@ describe('FilterProcessor', () => {
             processingPromises.push(filterProcessor())
 
             // добавляем назначения постепенно
-            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 1, workerId: 1 }), 10)
-            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 2, workerId: 2 }), 20)
-            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 3, workerId: 1 }), 30)
+            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 1, workerId: 1 }), 10) // нечетное → worker2
+            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 2, workerId: 2 }), 20) // четное → worker1
+            setTimeout(() => assignmentQueue.enqueueAsync({ workItem: 3, workerId: 1 }), 30) // нечетное → worker2
 
             await Promise.all(processingPromises)
 
-            // then - все назначения обработаны
-            expect(worker1Queue.size()).toBe(2)
-            expect(worker2Queue.size()).toBe(1)
+            // then - все назначения обработаны по четности
+            expect(worker1Queue.size()).toBe(1) // работа 2 (четная)
+            expect(worker2Queue.size()).toBe(2) // работы 1, 3 (нечетные)
         })
     })
 
-    describe('Распределение по дополнительным рабочим', () => {
-        it('должен распределять рабочих с номерами больше 2', async () => {
-            // given - назначения для рабочих с разными номерами
-            const assignments: IWorkAssignment[] = [
-                { workItem: 1, workerId: 3 }, // нечетный -> рабочий 1
-                { workItem: 2, workerId: 4 }, // четный -> рабочий 2
-                { workItem: 3, workerId: 5 }, // нечетный -> рабочий 1
-                { workItem: 4, workerId: 6 }  // четный -> рабочий 2
-            ]
+    // Удалено: старые тесты с неправильной логикой
 
-            for (const assignment of assignments) {
-                await assignmentQueue.enqueueAsync(assignment)
-            }
-
-            // when - обрабатываем все назначения
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-
-            for (let i = 0; i < assignments.length; i++) {
-                await filterProcessor()
-            }
-
-            // then - работы распределены по модулю
-            expect(worker1Queue.size()).toBe(2) // рабочие 3, 5
-            expect(worker2Queue.size()).toBe(2) // рабочие 4, 6
-
-            const worker1Items = []
-            worker1Items.push(await worker1Queue.dequeueAsync())
-            worker1Items.push(await worker1Queue.dequeueAsync())
-
-            const worker2Items = []
-            worker2Items.push(await worker2Queue.dequeueAsync())
-            worker2Items.push(await worker2Queue.dequeueAsync())
-
-            expect(worker1Items).toEqual([1, 3])
-            expect(worker2Items).toEqual([2, 4])
-        })
-
-        it('должен корректно обрабатывать нулевой номер рабочего', async () => {
-            // given - рабочий с номером 0
-            const assignment: IWorkAssignment = {
-                workItem: 42,
-                workerId: 0
-            }
-            await assignmentQueue.enqueueAsync(assignment)
-
-            // when - обрабатываем
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-            await filterProcessor()
-
-            // then - работа направлена рабочему 2 (0 % 2 === 0)
-            expect(worker1Queue.size()).toBe(0)
-            expect(worker2Queue.size()).toBe(1)
-
-            const workItem = await worker2Queue.dequeueAsync()
-            expect(workItem).toBe(42)
-        })
-    })
-
-    describe('Граничные случаи', () => {
-        it('должен обрабатывать нулевые значения работ', async () => {
-            // given - работа со значением 0
-            const assignment: IWorkAssignment = {
-                workItem: 0,
-                workerId: 1
-            }
-            await assignmentQueue.enqueueAsync(assignment)
-
-            // when - обрабатываем
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-            await filterProcessor()
-
-            // then - ноль корректно обработан
-            expect(worker1Queue.size()).toBe(1)
-            const workItem = await worker1Queue.dequeueAsync()
-            expect(workItem).toBe(0)
-        })
-
-        it('должен обрабатывать отрицательные значения работ', async () => {
-            // given - работа с отрицательным значением
-            const assignment: IWorkAssignment = {
-                workItem: -42,
-                workerId: 2
-            }
-            await assignmentQueue.enqueueAsync(assignment)
-
-            // when - обрабатываем
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-            await filterProcessor()
-
-            // then - отрицательное значение корректно обработано
-            expect(worker2Queue.size()).toBe(1)
-            const workItem = await worker2Queue.dequeueAsync()
-            expect(workItem).toBe(-42)
-        })
-
-        it('должен обрабатывать большие значения работ', async () => {
-            // given - работа с большим значением
-            const bigWork = Number.MAX_SAFE_INTEGER
-            const assignment: IWorkAssignment = {
-                workItem: bigWork,
-                workerId: 1
-            }
-            await assignmentQueue.enqueueAsync(assignment)
-
-            // when - обрабатываем
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-            await filterProcessor()
-
-            // then - большое значение корректно обработано
-            expect(worker1Queue.size()).toBe(1)
-            const workItem = await worker1Queue.dequeueAsync()
-            expect(workItem).toBe(bigWork)
-        })
-
-        it('должен обрабатывать отрицательные номера рабочих', async () => {
-            // given - рабочий с отрицательным номером
-            const assignment: IWorkAssignment = {
-                workItem: 42,
-                workerId: -1
-            }
-            await assignmentQueue.enqueueAsync(assignment)
-
-            // when - обрабатываем
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-            await filterProcessor()
-
-            // then - работа распределена по модулю (-1 % 2 === -1, нечетное -> рабочий 1)
-            expect(worker1Queue.size()).toBe(1)
-            const workItem = await worker1Queue.dequeueAsync()
-            expect(workItem).toBe(42)
-        })
-    })
+    // Удалено: граничные случаи перенесены в секцию "Распределение по четности"
 
     describe('Стресс-тесты', () => {
         it('должен обрабатывать большое количество назначений', async () => {
-            // given - большое количество назначений
+            // given - большое количество назначений с четными и нечетными работами
             const count = 1000
             const assignments: IWorkAssignment[] = []
 
             for (let i = 0; i < count; i++) {
                 assignments.push({
-                    workItem: i,
-                    workerId: (i % 2) + 1 // чередуем рабочих 1 и 2
+                    workItem: i, // 0,1,2,3,4,5...
+                    workerId: 1 // workerId не важен, считаем workItem
                 })
                 await assignmentQueue.enqueueAsync(assignments[i])
             }
@@ -392,38 +316,10 @@ describe('FilterProcessor', () => {
                 await filterProcessor()
             }
 
-            // then - все назначения обработаны
-            expect(worker1Queue.size()).toBe(count / 2)
-            expect(worker2Queue.size()).toBe(count / 2)
+            // then - четные в worker1, нечетные в worker2
+            expect(worker1Queue.size()).toBe(count / 2) // 0,2,4,6... (500 штук)
+            expect(worker2Queue.size()).toBe(count / 2) // 1,3,5,7... (500 штук)
             expect(assignmentQueue.size()).toBe(0)
-        })
-
-        it('должен равномерно распределять работу между рабочими', async () => {
-            // given - случайные назначения
-            const count = 100
-            const worker1Count = 30
-            const worker2Count = 70
-
-            // добавляем назначения для рабочего 1
-            for (let i = 0; i < worker1Count; i++) {
-                await assignmentQueue.enqueueAsync({ workItem: i, workerId: 1 })
-            }
-
-            // добавляем назначения для рабочего 2
-            for (let i = 0; i < worker2Count; i++) {
-                await assignmentQueue.enqueueAsync({ workItem: i + worker1Count, workerId: 2 })
-            }
-
-            // when - обрабатываем все назначения
-            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
-
-            for (let i = 0; i < count; i++) {
-                await filterProcessor()
-            }
-
-            // then - распределение корректно
-            expect(worker1Queue.size()).toBe(worker1Count)
-            expect(worker2Queue.size()).toBe(worker2Count)
         })
     })
 
@@ -468,11 +364,11 @@ describe('FilterProcessor', () => {
         it('должен корректно работать при параллельной обработке', async () => {
             // given - несколько назначений
             const assignments: IWorkAssignment[] = [
-                { workItem: 1, workerId: 1 },
-                { workItem: 2, workerId: 2 },
-                { workItem: 3, workerId: 1 },
-                { workItem: 4, workerId: 2 },
-                { workItem: 5, workerId: 1 }
+                { workItem: 1, workerId: 1 }, // нечетное → worker2
+                { workItem: 2, workerId: 2 }, // четное → worker1
+                { workItem: 3, workerId: 1 }, // нечетное → worker2
+                { workItem: 4, workerId: 2 }, // четное → worker1
+                { workItem: 5, workerId: 1 }  // нечетное → worker2
             ]
 
             for (const assignment of assignments) {
@@ -489,19 +385,19 @@ describe('FilterProcessor', () => {
 
             await Promise.all(promises)
 
-            // then - все назначения обработаны корректно
-            expect(worker1Queue.size()).toBe(3) // работы 1, 3, 5
-            expect(worker2Queue.size()).toBe(2) // работы 2, 4
+            // then - все назначения обработаны по четности
+            expect(worker1Queue.size()).toBe(2) // работы 2, 4 (четные)
+            expect(worker2Queue.size()).toBe(3) // работы 1, 3, 5 (нечетные)
             expect(assignmentQueue.size()).toBe(0)
         })
 
         it('должен обрабатывать смешанные назначения в правильном порядке', async () => {
-            // given - смешанные назначения
+            // given - смешанные четные и нечетные назначения
             const assignments: IWorkAssignment[] = [
-                { workItem: 100, workerId: 2 },
-                { workItem: 200, workerId: 1 },
-                { workItem: 300, workerId: 2 },
-                { workItem: 400, workerId: 1 }
+                { workItem: 100, workerId: 2 }, // четное → worker1
+                { workItem: 201, workerId: 1 }, // нечетное → worker2
+                { workItem: 302, workerId: 2 }, // четное → worker1
+                { workItem: 403, workerId: 1 }  // нечетное → worker2
             ]
 
             for (const assignment of assignments) {
@@ -515,21 +411,84 @@ describe('FilterProcessor', () => {
                 await filterProcessor()
             }
 
-            // then - порядок сохранен в очередях рабочих
-            expect(worker1Queue.size()).toBe(2)
-            expect(worker2Queue.size()).toBe(2)
+            // then - порядок сохранен по четности
+            expect(worker1Queue.size()).toBe(2) // четные работы
+            expect(worker2Queue.size()).toBe(2) // нечетные работы
 
-            // рабочий 1 должен получить работы 200, 400 в таком порядке
+            // worker1 должен получить четные работы в порядке поступления
             const worker1Item1 = await worker1Queue.dequeueAsync()
             const worker1Item2 = await worker1Queue.dequeueAsync()
-            expect(worker1Item1).toBe(200)
-            expect(worker1Item2).toBe(400)
+            expect(worker1Item1).toBe(100)
+            expect(worker1Item2).toBe(302)
 
-            // рабочий 2 должен получить работы 100, 300 в таком порядке
+            // worker2 должен получить нечетные работы в порядке поступления
             const worker2Item1 = await worker2Queue.dequeueAsync()
             const worker2Item2 = await worker2Queue.dequeueAsync()
-            expect(worker2Item1).toBe(100)
-            expect(worker2Item2).toBe(300)
+            expect(worker2Item1).toBe(201)
+            expect(worker2Item2).toBe(403)
+        })
+    })
+
+    describe('Распределение по четности номера работы', () => {
+        it('должен правильно обрабатывать работы 0-10', async () => {
+            // given - работы от 0 до 10
+            const assignments: IWorkAssignment[] = []
+            for (let i = 0; i <= 10; i++) {
+                assignments.push({ workItem: i, workerId: 1 })
+            }
+
+            for (const assignment of assignments) {
+                await assignmentQueue.enqueueAsync(assignment)
+            }
+
+            // when - обрабатываем все назначения
+            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
+            for (let i = 0; i < assignments.length; i++) {
+                await filterProcessor()
+            }
+
+            // then - четные в worker1, нечетные в worker2
+            expect(worker1Queue.size()).toBe(6) // 0,2,4,6,8,10
+            expect(worker2Queue.size()).toBe(5) // 1,3,5,7,9
+        })
+
+        it('должен обрабатывать отрицательные работы', async () => {
+            // given - отрицательная работа
+            const assignment: IWorkAssignment = {
+                workItem: -42, // четное (отрицательное)
+                workerId: 2
+            }
+            await assignmentQueue.enqueueAsync(assignment)
+
+            // when - обрабатываем
+            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
+            await filterProcessor()
+
+            // then - -42 четное → worker1
+            expect(worker1Queue.size()).toBe(1)
+            expect(worker2Queue.size()).toBe(0)
+            const workItem = await worker1Queue.dequeueAsync()
+            expect(workItem).toBe(-42)
+        })
+
+        it('должен обрабатывать большие значения работ', async () => {
+            // given - большое четное число
+            const bigWork = Number.MAX_SAFE_INTEGER - 1 // четное
+            const assignment: IWorkAssignment = {
+                workItem: bigWork,
+                workerId: 1
+            }
+            await assignmentQueue.enqueueAsync(assignment)
+
+            // when - обрабатываем
+            const filterProcessor = createFilterProcessor(assignmentQueue, worker1Queue, worker2Queue)
+            await filterProcessor()
+
+            // then - большое четное → worker1
+            expect(worker1Queue.size()).toBe(1)
+            expect(worker2Queue.size()).toBe(0)
+            const workItem = await worker1Queue.dequeueAsync()
+            expect(workItem).toBe(bigWork)
         })
     })
 }) 

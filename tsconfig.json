@@ -31,7 +31,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "useDefineForClassFields": true,
-    "types": ["jest", "node", "jsdom"]
+    "types": ["vitest/globals", "node"]
   },
   "include": [
     "src/**/*",

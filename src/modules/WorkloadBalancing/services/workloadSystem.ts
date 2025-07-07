@@ -60,8 +60,8 @@ export class WorkloadSystem {
     constructor(_config: Partial<IWorkloadSystemConfig> = {}) {
         // Конфигурация по умолчанию
         this.p_config = {
-            workGenerationIntervalMs: 2000,
-            maxWorks: 50,
+            workGenerationIntervalMs: 800, // Быстрее для ресторана!
+            maxWorks: 200, // Больше заказов!
             autoStart: false,
             ..._config
         }
@@ -127,22 +127,38 @@ export class WorkloadSystem {
             return
         }
 
+        console.log('🛑 Начинаем остановку системы...')
         this.p_shouldStop = true
         this.p_state.isRunning = false
 
         // Останавливаем генератор
         if (this.p_workGenerator) {
+            console.log('⏹️ Останавливаем генератор работ...')
             await this.p_workGenerator.stopAsync()
+            console.log('✅ Генератор остановлен')
         }
 
         // Ждем завершения всех циклов обработки
-        await Promise.all(this.p_processingLoops)
+        console.log('⏳ Ждем завершения процессоров...')
+        try {
+            await Promise.all(this.p_processingLoops)
+            console.log('✅ Все процессоры остановлены')
+        } catch (error) {
+            console.error('❌ Ошибка при остановке процессоров:', error)
+        }
+
+        console.log('✅ Система полностью остановлена')
     }
 
     /**
      * Возвращает текущее состояние системы
      */
     getState(): Readonly<IWorkloadSystemState> {
+        // Обновляем счетчик сгенерированных работ из генератора
+        if (this.p_workGenerator) {
+            this.p_state.generatedWorks = this.p_workGenerator.getCurrentWorkCount()
+        }
+
         return { ...this.p_state }
     }
 

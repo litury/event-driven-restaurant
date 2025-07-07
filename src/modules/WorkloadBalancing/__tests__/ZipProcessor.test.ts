@@ -1,9 +1,11 @@
 import type { IEventQueue, IWorkItem, IWorkerFreeEvent, IWorkAssignment } from '../interfaces'
 
 /**
- * Тесты для ZIP-процессора
+ * Тесты для ZIP-процессора (переписано для Vitest)
  * Автор: "ZIP объединяет события о готовности рабочих и заданиях, формируя пары"
  * Используем given-when-then подход
+ * 
+ * VITEST: Hot Reload для тестов - изменения применяются мгновенно!
  */
 
 describe('ZipProcessor', () => {

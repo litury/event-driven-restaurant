@@ -11,13 +11,39 @@ import type {
     WorkGeneratorFunction
 } from '../interfaces'
 
+// Глобальный логгер событий (будет устанавливаться из UI)
+let globalEventLogger: ((type: string, icon: string, message: string, data?: string) => void) | null = null
+
 /**
- * ZIP-процессор - объединяет потоки работ и рабочих
- * Автор: "ZIP комбинирует их, перекладывает это в назначенных рабочих"
- * 
- * @param _workQueue - очередь работ
- * @param _freeWorkersQueue - очередь свободных рабочих  
- * @param _assignmentQueue - очередь назначений
+ * Установить глобальный логгер событий
+ * @param {function} logger - функция для логирования событий
+ * @returns {void}
+ */
+export function setGlobalEventLogger(logger: (type: string, icon: string, message: string, data?: string) => void) {
+    globalEventLogger = logger
+}
+
+/**
+ * Логирует событие если установлен глобальный логгер
+ * @param {string} type - тип события
+ * @param {string} icon - иконка события
+ * @param {string} message - сообщение
+ * @param {string} [data] - дополнительные данные
+ * @returns {void}
+ */
+function logEvent(type: string, icon: string, message: string, data?: string) {
+    if (globalEventLogger) {
+        globalEventLogger(type, icon, message, data)
+    }
+}
+
+/**
+ * ZIP-процессор объединяет потоки работ и рабочих
+ * @description Ожидает одновременно работу и свободного рабочего, создает назначение
+ * @param {IEventQueue<IWorkItem>} _workQueue - очередь работ
+ * @param {IEventQueue<IWorkerFreeEvent>} _freeWorkersQueue - очередь свободных рабочих  
+ * @param {IEventQueue<IWorkAssignment>} _assignmentQueue - очередь назначений
+ * @returns {Promise<void>} промис завершения операции
  */
 export const createZipProcessorAsync: ZipProcessorFunction = async (
     _workQueue: IEventQueue<IWorkItem>,
@@ -27,6 +53,12 @@ export const createZipProcessorAsync: ZipProcessorFunction = async (
     // Ждем одновременно работу И рабочего
     const workItem = await _workQueue.dequeueAsync()
     const workerId = await _freeWorkersQueue.dequeueAsync()
+
+    logEvent('assignment', '🤝', `Заказ #${workItem} назначен повару #${workerId}`, `Заказ: ${workItem}`)
+
+    // 🤝 ВРЕМЯ ДИСПЕТЧЕРА на принятие решения (100-300мс)
+    const decisionTimeMs = Math.random() * 200 + 100 // 100-300мс
+    await new Promise(resolve => setTimeout(resolve, decisionTimeMs))
 
     // Создаем назначение как неизменяемый объект
     const assignment: IWorkAssignment = {
@@ -39,12 +71,12 @@ export const createZipProcessorAsync: ZipProcessorFunction = async (
 }
 
 /**
- * Фильтр-процессор - распределяет назначения по рабочим
- * Автор: "Фильтр получает назначенную работу и отдает это в очереди на двух рабочих"
- * 
- * @param _assignmentQueue - очередь назначений
- * @param _worker1Queue - очередь для рабочего 1
- * @param _worker2Queue - очередь для рабочего 2
+ * Фильтр-процессор распределяет назначения по рабочим
+ * @description Получает назначения и отправляет их в очереди рабочих по принципу четные/нечетные
+ * @param {IEventQueue<IWorkAssignment>} _assignmentQueue - очередь назначений
+ * @param {IEventQueue<IWorkItem>} _worker1Queue - очередь для рабочего 1 (четные)
+ * @param {IEventQueue<IWorkItem>} _worker2Queue - очередь для рабочего 2 (нечетные)
+ * @returns {Promise<void>} промис завершения операции
  */
 export const createFilterProcessorAsync: FilterProcessorFunction = async (
     _assignmentQueue: IEventQueue<IWorkAssignment>,
@@ -54,21 +86,24 @@ export const createFilterProcessorAsync: FilterProcessorFunction = async (
     // Получаем назначение
     const assignment = await _assignmentQueue.dequeueAsync()
 
-    // Функциональное распределение по рабочим
-    // Логика для отрицательных чисел: -1 должен быть нечетным (worker1)
-    const routeToWorker = pipe(
-        (workerId: number) => {
-            if (workerId === 1) return 'worker1'
-            if (workerId === 2) return 'worker2'
+    // 📋 ВРЕМЯ ФИЛЬТРА на анализ и распределение (50-150мс)
+    const analysisTimeMs = Math.random() * 100 + 50 // 50-150мс
+    await new Promise(resolve => setTimeout(resolve, analysisTimeMs))
 
-            // Для отрицательных чисел: -1, -3, -5... -> worker1, -2, -4, -6... -> worker2
-            // Используем Math.abs и проверяем остаток
-            const isOdd = Math.abs(workerId) % 2 === 1
-            return isOdd ? 'worker1' : 'worker2'
+    // Функциональное распределение по НОМЕРУ РАБОТЫ (workItem), а не по номеру рабочего!
+    // Распределение: четные числа → рабочий 1, нечетные → рабочий 2
+    const routeToWorker = pipe(
+        (workItem: number) => {
+            // Для четных чисел (включая 0): 0, 2, 4, 6... → worker1
+            // Для нечетных чисел: 1, 3, 5, 7... → worker2
+            const isEven = workItem % 2 === 0
+            return isEven ? 'worker1' : 'worker2'
         }
     )
 
-    const targetWorker = routeToWorker(assignment.workerId)
+    const targetWorker = routeToWorker(assignment.workItem) // ✅ Используем workItem!
+
+    logEvent('assignment', '📋', `Заказ #${assignment.workItem} направлен к повару #${targetWorker === 'worker1' ? '1' : '2'}`, `Заказ: ${assignment.workItem}`)
 
     // Отправляем работу соответствующему рабочему
     if (targetWorker === 'worker1') {
@@ -96,6 +131,12 @@ export const createWorkerProcessorAsync: WorkerProcessorFunction = async (
     // Получаем работу
     const workItem = await _workQueue.dequeueAsync()
 
+    logEvent('cooking', '🍳', `Повар #${_workerId} начал готовить заказ #${workItem}`, `Заказ: ${workItem}`)
+
+    // 🍳 РЕАЛИСТИЧНОЕ ВРЕМЯ ПРИГОТОВЛЕНИЯ (1-3 секунды)
+    const cookingTimeMs = Math.random() * 2000 + 1000 // 1000-3000мс
+    await new Promise(resolve => setTimeout(resolve, cookingTimeMs))
+
     // Функциональная обработка работы (простой пример - умножение на 2)
     const processWork = pipe(
         (work: number) => work * 2
@@ -112,6 +153,8 @@ export const createWorkerProcessorAsync: WorkerProcessorFunction = async (
 
     // Отправляем результат
     await _resultQueue.enqueueAsync(result)
+
+    logEvent('complete', '✅', `Заказ #${workItem} готов! Повар #${_workerId} освободился`, `Результат: ${processedResult}`)
 
     // Сообщаем что освободились
     await _freeWorkersQueue.enqueueAsync(_workerId)
@@ -141,9 +184,11 @@ export const createWorkGeneratorAsync: WorkGeneratorFunction = (
             p_intervalId = setInterval(async () => {
                 if (p_workCounter <= _maxWorks) {
                     await _workQueue.enqueueAsync(p_workCounter)
+                    logEvent('order', '📝', `Новый заказ #${p_workCounter} принят`, `Заказ: ${p_workCounter}`)
                     p_workCounter++
                 } else {
                     // Автоматически останавливаем когда достигли лимита
+                    logEvent('system', '⏹️', 'Генерация заказов завершена', `Всего: ${_maxWorks}`)
                     await this.stopAsync()
                 }
             }, _intervalMs)

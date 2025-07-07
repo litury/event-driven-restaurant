@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏭 Событийная система ресторана | Tailwind Edition</title>
+    <meta name="description" content="Демонстрация принципов Complex Event Processing с визуализацией событийных систем">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏭</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Кастомные анимации */
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes slide-in {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+    .slide-in { animation: slide-in 0.3s ease-out; }
+    .fade-in { animation: fade-in 0.5s ease-out; }
+    .queue-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body>
+
+  <!-- Точка монтирования Vue приложения -->
+  <div id="app"></div>
+  
+  <!-- Информация о проекте в консоли -->
+  <script>
+    console.log(`
+🏭 Событийная Система Ресторана | CEP Demo  
+📚 Практическое изучение Complex Event Processing
+
+🎨 Возможности интерфейса:
+- 🍕 Минималистичный интерфейс кухни ресторана  
+- 📊 Подробный аналитический дашборд
+- ⚡ Выбор интерфейса одним кликом
+- 🎨 Современный дизайн на Tailwind CSS
+
+🏗️ Архитектура системы:
+- 4 участка обработки (ZIP, Фильтр, 2 Повара)
+- 5 очередей событий
+- Живая визуализация в реальном времени
+- TDD подход с максимальной простотой
+    `);
+  </script>
+  
+  <!-- Загрузка Vue приложения -->
+  <script type="module" src="./main.ts"></script>
+</body>
+</html> 

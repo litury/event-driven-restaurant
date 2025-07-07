@@ -2,8 +2,8 @@ import type { IEventQueue } from '../../modules/WorkloadBalancing/interfaces'
 
 /**
  * Реализация очереди событий на основе массива с асинхронными операциями
- * Автор лекции: "Очередь - это фиксирующее оборудование для событий"
  * 
+ * @description Очередь - это фиксирующее оборудование для событий
  * @template T - тип событий в очереди
  */
 export class EventQueue<T> implements IEventQueue<T> {

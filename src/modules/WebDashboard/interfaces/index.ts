@@ -1,0 +1,1 @@
+export type { IWebDashboardConfig } from './IWebDashboardConfig' 
