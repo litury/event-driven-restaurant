@@ -1,5 +1,7 @@
 # 🍕 Ресторан "Событийная Кухня" - CEP Demo
 
+![Build Status](https://github.com/litury/event-driven-restaurant/actions/workflows/pages.yml/badge.svg)
+![Tests](https://img.shields.io/badge/Tests-95_passing-brightgreen?style=flat-square&logo=vitest&logoColor=white)
 ![Vue 3](https://img.shields.io/badge/Vue.js-3.4+-4FC08D?style=flat-square&logo=vue.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0+-06B6D4?style=flat-square&logo=tailwind-css&logoColor=white)
