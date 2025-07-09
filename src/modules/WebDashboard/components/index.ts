@@ -1,7 +1,5 @@
-export { default as TailwindDashboard } from './TailwindDashboard.vue'
-export { default as TailwindRestaurant } from './TailwindRestaurant.vue'
-export { default as InterfaceSelector } from './InterfaceSelector.vue'
+// Современные компоненты для ресторанного дашборда CEP системы
+export { default as ModernDashboard } from './ModernDashboard.vue'
 export { default as StatCard } from './StatCard.vue'
 export { default as PipelineStep } from './PipelineStep.vue'
-export { default as QueueVisualization } from './QueueVisualization.vue'
-export { default as EventLog } from './EventLog.vue'
+export { default as RestaurantOrderCard } from './RestaurantOrderCard.vue'

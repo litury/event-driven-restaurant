@@ -6,14 +6,15 @@
  */
 
 import { createApp } from 'vue'
-import InterfaceSelector from '../modules/WebDashboard/components/InterfaceSelector.vue'
+import './style.css'
+import ModernDashboard from '../modules/WebDashboard/components/ModernDashboard.vue'
 
-// Создаем Vue приложение с селектором интерфейсов
-const app = createApp(InterfaceSelector)
+// Создаем Vue приложение только с современным дашбордом (согласно требованию)
+const app = createApp(ModernDashboard)
 
 // Монтируем приложение
 app.mount('#app')
 
 // Логирование для отладки
-console.log('🚀 Событийная система ресторана запущена!')
-console.log('🍕 Выберите интерфейс: Кухня ресторана или Аналитический дашборд') 
+console.log('🚀 Современный аналитический дашборд запущен!')
+console.log('📊 Система готова к мониторингу CEP событий') 

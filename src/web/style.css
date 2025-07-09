@@ -1,8 +1,9 @@
-@import "tailwindcss";
+@import "./theme.css";
 
 /* Дополнительные стили для анимаций */
 @keyframes pulse-soft {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -66,4 +67,4 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-} 
+}

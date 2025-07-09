@@ -1,0 +1,69 @@
+# Игнорировать сборки и кэш
+/dist
+/node_modules
+**/node_modules
+/microfronts
+/.cache
+**/.nuxt
+**/.output
+**/dist
+**/build
+
+# Игнорировать конфигурационные файлы
+
+# Игнорировать логи и временные файлы
+*.log
+*.tmp
+.deps
+obsolete
+unused
+artifacts
+abi
+/test
+
+# Игнорировать файлы IDE
+.vscode
+.idea
+
+# Игнорировать артефакты сборки Hardhat
+/artifacts
+/cache
+
+# Игнорировать файлы покрытия тестами
+/coverage
+
+# Игнорировать сгенерированные типы
+*.d.ts
+
+# Исключить package-lock.json везде
+**/package-lock.json
+
+
+# Дополнительные файлы для игнорирования (для производительности)
+**/.git
+**/yarn.lock
+**/pnpm-lock.yaml
+**/.env
+**/.env.*
+**/credentials.json
+**/secrets.json
+**/*.key
+**/*.pem
+**/id_rsa
+
+# Игнорировать большие файлы ресурсов
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.mkv
+**/*.webm
+**/*.pdf
+**/*.zip
+**/*.tar.gz
+**/*.rar
+
+# Игнорировать файлы операционной системы
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

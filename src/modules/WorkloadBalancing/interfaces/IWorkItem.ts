@@ -1,47 +1,92 @@
 /**
- * Событие работы - число от генератора
- * Автор: "Работа передается числом"
+ * Базовый тип работы - остается для обратной совместимости
  */
 export type IWorkItem = number
 
 /**
- * Событие "я свободен" - номер рабочего
- * Автор: "Событие о том, что рабочий освободился, тоже передается числом"
+ * Расширенный заказ ресторана с приоритетами
+ */
+export interface IRestaurantOrder {
+    /** Номер заказа (как был IWorkItem) */
+    orderNumber: number
+
+    /** Тип клиента - влияет на приоритет */
+    customerType: 'VIP' | 'обычный' | 'доставка'
+
+    /** Тип блюда - определяет к какому повару идет */
+    dishType: 'пицца' | 'бургер' | 'салат' | 'десерт'
+
+    /** Сложность приготовления */
+    complexity: 'простое' | 'среднее' | 'сложное'
+
+    /** Расчетное время приготовления (мс) */
+    estimatedCookingTimeMs: number
+
+    /** Расчетное время обработки (для совместимости с IPriorityItem) */
+    estimatedProcessingTimeMs: number
+
+    /** Крайний срок готовности */
+    deadline: Date
+
+    /** Время поступления заказа */
+    enqueuedAt: Date
+
+    /** Специальные требования клиента */
+    specialRequests?: string[]
+
+    /** Рассчитанный приоритет (чем меньше, тем важнее) */
+    priority: number
+}
+
+/**
+ * Событие назначения заказа повару
+ * Автор: "ZIP комбинирует работу и рабочего"
+ */
+export interface IWorkAssignment {
+    workItem: IWorkItem
+    workerId: number
+}
+
+/**
+ * Расширенное назначение для ресторана
+ */
+export interface IRestaurantAssignment {
+    order: IRestaurantOrder
+    chefId: number
+    assignedAt: Date
+}
+
+/**
+ * Событие "я свободен" от рабочего
  */
 export type IWorkerFreeEvent = number
 
 /**
- * Событие назначения работы рабочему
- * Автор: "Он передает событие о том, что рабочий назначен, что это пара"
+ * Событие "повар свободен" 
  */
-export interface IWorkAssignment {
-    /**
-     * Описание работы (число)
-     */
-    readonly workItem: IWorkItem
-
-    /**
-     * Номер рабочего, который свободен
-     */
-    readonly workerId: IWorkerFreeEvent
+export interface IChefFreeEvent {
+    chefId: number
+    specialization: 'пицца' | 'бургер' | 'универсал'
+    freedAt: Date
 }
 
 /**
- * Результат выполнения работы
+ * Результат работы
  */
 export interface IWorkResult {
-    /**
-     * Исходная работа
-     */
-    readonly workItem: IWorkItem
+    workItem: IWorkItem
+    result: number
+    completedAt: number
+}
 
-    /**
-     * Результат обработки
-     */
-    readonly result: number
-
-    /**
-     * Время завершения
-     */
-    readonly completedAt: number
+/**
+ * Результат приготовления в ресторане
+ */
+export interface IRestaurantResult {
+    order: IRestaurantOrder
+    chefId: number
+    actualCookingTimeMs: number
+    quality: 'отлично' | 'хорошо' | 'приемлемо'
+    completedAt: Date
+    notes?: string
 } 

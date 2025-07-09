@@ -8,16 +8,24 @@
  * - UI логика (не бизнес!) в composables
  * - Адаптация бизнес-модуля WorkloadBalancing для веба
  * - Реактивная визуализация 4 участков и 5 очередей
+ * 
+ * ДОМАШНЕЕ ЗАДАНИЕ №2 - РЕСТОРАННАЯ МЕТАФОРА:
+ * - Полноценные заказы ресторана вместо простых чисел
+ * - VIP клиенты с приоритетными заказами  
+ * - Обработка ошибок поваров (заболел, нет ингредиентов)
+ * - Приоритетные очереди с дедлайнами
+ * - Образовательный интерфейс с объяснениями CEP принципов
  */
 
-// Компоненты для визуализации (Tailwind CSS)
-export { default as InterfaceSelector } from './components/InterfaceSelector.vue'
-export { default as TailwindDashboard } from './components/TailwindDashboard.vue'
-export { default as TailwindRestaurant } from './components/TailwindRestaurant.vue'
-export { default as QueueVisualization } from './components/QueueVisualization.vue'
+// Современные компоненты ресторанного дашборда
+export { default as ModernDashboard } from './components/ModernDashboard.vue'
+export { default as StatCard } from './components/StatCard.vue'
+export { default as PipelineStep } from './components/PipelineStep.vue'
+export { default as RestaurantOrderCard } from './components/RestaurantOrderCard.vue'
 
 // Композаблы (UI логика)
 export { useWorkloadVisualizer } from './composables/useWorkloadVisualizer'
+export { useRestaurantVisualizer } from './composables/useRestaurantVisualizer'
 
-// Интерфейсы и типы
-export type { IWebDashboardConfig } from './interfaces' 
+// Интерфейсы и конфигурация
+export type * from './interfaces' 

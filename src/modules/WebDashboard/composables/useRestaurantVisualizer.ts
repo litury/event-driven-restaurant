@@ -1,6 +1,9 @@
 import { ref, computed, onMounted, onUnmounted, reactive, readonly } from 'vue'
 import { WorkloadSystem } from '../../WorkloadBalancing'
+import { createRestaurantOrderGenerator, type IRestaurantOrderGeneratorConfig } from '../../WorkloadBalancing/services/restaurantOrderGenerator'
+import { createEventQueue } from '../../../shared/infrastructure'
 import type { IWebDashboardConfig } from '../interfaces'
+import type { IRestaurantOrder } from '../../WorkloadBalancing/interfaces'
 
 /**
  * Композабл для визуализации ресторана быстрого питания
@@ -24,9 +27,18 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
     // Система балансировки работ (универсальная основа)
     const p_workloadSystem = ref<WorkloadSystem | null>(null)
 
+    // Генератор ресторанных заказов
+    const p_restaurantOrderGenerator = ref<any>(null)
+
+    // Очередь для полных заказов ресторана
+    const p_restaurantOrdersQueue = ref(createEventQueue<IRestaurantOrder>())
+
     // Статус ресторана
     const isRunning = ref(false)
     const systemStatus = ref<'Остановлен' | 'Работает' | 'Завершается'>('Остановлен')
+
+    // Режим работы - показывать простые числа или полные заказы
+    const restaurantMode = ref<'legacy' | 'restaurant'>('restaurant')
 
     // Интервалы обновления (для реалистичности ресторана делаем чаще)
     const p_updateIntervalId = ref<number | null>(null)
@@ -37,7 +49,9 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
         ordersReceived: 0,        // 📱 Принято заказов через приложение
         dishesCompleted: 0,       // ✅ Готово блюд поварами
         averageWaitTime: 0,       // ⏱️ Среднее время ожидания
-        rushHourActive: false     // 🕐 Час пик активен
+        rushHourActive: false,    // 🕐 Час пик активен
+        vipOrders: 0,            // 👑 VIP заказы
+        overdueOrders: 0         // ⚠️ Просроченные заказы
     })
 
     // 📊 **Размеры очередей ресторана** 
@@ -48,6 +62,14 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
         pizzaCook: 0,          // 🍕 Очередь повара пиццы
         burgerCook: 0,         // 🍔 Очередь повара бургеров
         readyDishes: 0         // 🚗 Готовые блюда для выдачи
+    })
+
+    // 📋 **Текущие заказы ресторана** 
+    const currentOrders = reactive({
+        newOrders: [] as IRestaurantOrder[],
+        pizzaOrders: [] as IRestaurantOrder[],
+        burgerOrders: [] as IRestaurantOrder[],
+        readyOrders: [] as IRestaurantOrder[]
     })
 
     // 🔄 **Вычисляемые показатели ресторана**
@@ -94,11 +116,16 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
      */
     async function openRestaurantAsync() {
         try {
-            if (p_workloadSystem.value) {
+            if (p_workloadSystem.value && p_restaurantOrderGenerator.value) {
                 console.log('🍔 Открываем ресторан...')
                 systemStatus.value = 'Работает'
 
+                // Запускаем систему балансировки работ
                 await p_workloadSystem.value.startAsync()
+
+                // Запускаем генератор ресторанных заказов
+                await p_restaurantOrderGenerator.value.startAsync()
+
                 isRunning.value = true
 
                 // Запускаем обновление статистики ресторана
@@ -124,6 +151,13 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
                 systemStatus.value = 'Завершается'
 
                 p_stopStatsUpdate()
+
+                // Останавливаем генератор заказов
+                if (p_restaurantOrderGenerator.value) {
+                    await p_restaurantOrderGenerator.value.stopAsync()
+                }
+
+                // Останавливаем систему балансировки
                 await p_workloadSystem.value.stopAsync()
 
                 isRunning.value = false
@@ -162,8 +196,59 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
             // Определяем час пик по количеству заказов в очередях
             restaurantStats.rushHourActive = totalOrdersInProcess.value > 8
 
+            // Обновляем детальную информацию о заказах (если в режиме ресторана)
+            if (restaurantMode.value === 'restaurant') {
+                p_updateRestaurantOrderDetails()
+            }
+
         } catch (error) {
             console.error('❌ Ошибка обновления статистики ресторана:', error)
+        }
+    }
+
+    /**
+     * 📋 **Обновить детальную информацию о заказах**
+     */
+    function p_updateRestaurantOrderDetails() {
+        if (!p_restaurantOrdersQueue.value) return
+
+        try {
+            // Получаем все заказы из очереди
+            const allOrders = p_restaurantOrdersQueue.value.getItems()
+            const now = new Date()
+
+            // Очищаем старые данные
+            currentOrders.newOrders = []
+            currentOrders.pizzaOrders = []
+            currentOrders.burgerOrders = []
+            currentOrders.readyOrders = []
+
+            // Счетчики для статистики
+            let vipCount = 0
+            let overdueCount = 0
+
+            // Распределяем заказы по категориям
+            allOrders.forEach((order: IRestaurantOrder) => {
+                // Подсчитываем статистику
+                if (order.customerType === 'VIP') vipCount++
+                if (now > order.deadline) overdueCount++
+
+                // Распределяем по очередям (упрощенная логика для демонстрации)
+                if (order.dishType === 'пицца' || order.dishType === 'салат') {
+                    currentOrders.pizzaOrders.push(order)
+                } else if (order.dishType === 'бургер' || order.dishType === 'десерт') {
+                    currentOrders.burgerOrders.push(order)
+                } else {
+                    currentOrders.newOrders.push(order)
+                }
+            })
+
+            // Обновляем статистику
+            restaurantStats.vipOrders = vipCount
+            restaurantStats.overdueOrders = overdueCount
+
+        } catch (error) {
+            console.error('❌ Ошибка обновления деталей заказов:', error)
         }
     }
 
@@ -198,7 +283,19 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
             if (busyStatus === 'Час пик!') {
                 return `🔥 ${busyStatus} Повара работают на полную мощность!`
             }
-            return `🍽️ ${busyStatus}. Ресторан обслуживает клиентов.`
+
+            // Добавляем информацию о VIP и просроченных заказах
+            let statusParts = [`🍽️ ${busyStatus}. Ресторан обслуживает клиентов.`]
+
+            if (restaurantStats.vipOrders > 0) {
+                statusParts.push(`👑 VIP заказов: ${restaurantStats.vipOrders}`)
+            }
+
+            if (restaurantStats.overdueOrders > 0) {
+                statusParts.push(`⚠️ Просроченных: ${restaurantStats.overdueOrders}`)
+            }
+
+            return statusParts.join(' ')
         } else if (systemStatus.value === 'Завершается') {
             return '🧹 Ресторан закрывается... Дорабатываем последние заказы.'
         } else {
@@ -212,10 +309,27 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
 
         // Создаем событийную систему (универсальную основу)
         p_workloadSystem.value = new WorkloadSystem({
-            workGenerationIntervalMs: 800,  // Быстрые заказы
-            maxWorks: 999,                  // Практически бесконечно
+            workGenerationIntervalMs: 1500,  // Медленнее чтобы видеть детали заказов
+            maxWorks: 999,                   // Практически бесконечно
             autoStart: false
         })
+
+        // Создаем генератор ресторанных заказов
+        const generatorConfig: IRestaurantOrderGeneratorConfig = {
+            mode: 'restaurant',
+            intervalMs: 2000,  // Заказ каждые 2 секунды
+            maxOrders: 999,
+            enablePriorities: true
+        }
+
+        // Получаем workQueue из состояния системы
+        const workQueue = p_workloadSystem.value.getState().queues.workQueue
+
+        p_restaurantOrderGenerator.value = createRestaurantOrderGenerator(
+            workQueue,
+            p_restaurantOrdersQueue.value,
+            generatorConfig
+        )
 
         console.log('✅ Ресторан готов к работе!')
     })
@@ -238,12 +352,14 @@ export function useRestaurantVisualizer(config: IWebDashboardConfig = {}) {
         // Управление рестораном
         isRunning: readonly(isRunning),
         systemStatus: readonly(systemStatus),
+        restaurantMode: readonly(restaurantMode),
         openRestaurant,
         closeRestaurant,
 
         // Статистика и метрики
         restaurantStats: readonly(restaurantStats),
         queueSizes: readonly(queueSizes),
+        currentOrders: readonly(currentOrders),
         totalOrdersInProcess,
         kitchenEfficiency,
         restaurantBusyStatus,
