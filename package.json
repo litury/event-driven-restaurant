@@ -11,24 +11,16 @@
     "restaurant-metaphor",
     "cep-demo"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "CEP Demo Project",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/event-D-A.git"
-  },
-  "homepage": "https://your-username.github.io/event-D-A/",
-  "bugs": {
-    "url": "https://github.com/your-username/event-D-A/issues"
-  },
   "type": "module",
   "scripts": {
     "dev": "vite --port 3002 --host",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --port 3002",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
+    "test:coverage": "vitest run --coverage",
     "lint": "vue-tsc --noEmit",
     "format": "prettier --write .",
     "release": "semantic-release",
@@ -41,6 +33,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@vitejs/plugin-vue": "^4.0.0",
+    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
     "vitest": "^1.6.0",
