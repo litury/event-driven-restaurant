@@ -1,4 +1,4 @@
-name: Deploy CEP Restaurant Demo
+name: Deploy Real Project
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 🧪 Тестирование
+  # 🧪 Новая job для тестирования
   test:
     runs-on: ubuntu-latest
     steps:
@@ -26,22 +26,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      # 🔧 Исправление Rollup dependency проблемы
-      - name: Clean install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+      - name: Install dependencies
+        run: npm ci
 
+      # 🧪 Запускаем тесты
       - name: Run tests
         run: npm test
 
-      - name: TypeScript check
-        run: npm run build
+      # 📝 Проверка линтера
+      - name: Lint check
+        run: npm run lint
 
-  # 🚀 Деплой (только если тесты прошли)
+  # 🚀 Deploy только если тесты прошли
   deploy:
-    needs: test
+    needs: test # ⭐ Ключевая строка!
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -54,12 +54,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      # 🔧 Исправление Rollup dependency проблемы
-      - name: Clean install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build project
         run: npm run build
