@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 CEP Restaurant Demo
+Copyright (c) 2024 Event-Driven Architecture CEP Demo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,21 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Educational Purpose
+
+This project is created for educational demonstration of Complex Event Processing
+principles from Alexander Sholupov's lectures. The restaurant metaphor is used
+to make abstract CEP concepts understandable for students and developers.
+
+Feel free to use this code for:
+
+- Learning Event-driven Architecture
+- Understanding CEP principles
+- Teaching stream processing concepts
+- Demonstrating reactive systems
+- Academic research and projects
+
+Attribution appreciated but not required.

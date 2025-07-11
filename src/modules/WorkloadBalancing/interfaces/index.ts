@@ -28,7 +28,7 @@ export type {
     WorkerProcessorFunction,
     WorkGeneratorFunction,
     IWorkloadBalancingConfig
-} from './IFunctionalProcessors' 
+} from './IFunctionalProcessors'
 
 // 🆕 Новые интерфейсы для приоритетных очередей
 export type {
@@ -46,4 +46,40 @@ export type {
     IRestaurantErrorHandler,
     IErrorHandlingQueues,
     IErrorHandlingConfig
+} from './IErrorHandling'
+
+// 🔄 Новые интерфейсы для ДЗ-3: Событийная синхронизация
+export type {
+    IDataRecord,
+    ChangeEventType,
+    IChangeEvent,
+    IAddEvent,
+    IRemoveEvent,
+    IChangeFieldEvent,
+    DataChangeEvent,
+    IDataAPI,
+    IChangeLog,
+    IFileSystemState,
+    IFileSystemSync,
+    ISyncSystemConfig,
+    ISyncResult
+} from './ISyncDataModel'
+
+// 🍔 ДЗ-3: Ресторанная адаптация событийной синхронизации
+export type {
+    IRestaurantOrder,
+    RestaurantEventType,
+    IRestaurantEvent,
+    IOrderAddedEvent,
+    IOrderRemovedEvent,
+    IOrderModifiedEvent,
+    IStatusChangedEvent,
+    RestaurantChangeEvent,
+    IRestaurantZoneAPI,
+    IKitchenChangeLog,
+    IRestaurantZoneState,
+    IRestaurantZoneSync,
+    IRestaurantSyncConfig,
+    IRestaurantSyncResult
+} from './IRestaurantSyncModel'
 } from './IErrorHandling' 

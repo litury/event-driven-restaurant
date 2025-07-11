@@ -1,0 +1,39 @@
+---
+description: Конвенции для backend разработки
+globs: ["**/services/**/*.ts", "**/modules/**/*.ts", "**/app.js/**/*.ts"]
+alwaysApply: false
+---
+
+# Backend конвенции
+
+## API сервисы
+- Все API сервисы должны быть асинхронными с суффиксом `Async`
+- Используй интерфейсы для типизации API ответов
+- Обязательная обработка ошибок с `try/catch`
+
+## Модульная архитектура
+- Каждый модуль должен экспортировать свой интерфейс
+- Используй dependency injection через контейнер
+- Разделяй бизнес-логику и API вызовы
+
+## Пример структуры сервиса:
+```typescript
+// services/user/userService.ts
+export interface IUserService {
+  getUserAsync(_userId: number): Promise<User>;
+}
+
+export class UserService implements IUserService {
+  constructor(private readonly p_apiClient: IApiClient) {}
+
+  async getUserAsync(_userId: number): Promise<User> {
+    try {
+      return await this.p_apiClient.get(`/users/${_userId}`);
+    } catch (error) {
+      // Логируем ошибку для мониторинга
+      console.error('Ошибка получения пользователя:', error);
+      throw new UserNotFoundError(`Пользователь ${_userId} не найден`);
+    }
+  }
+}
+```

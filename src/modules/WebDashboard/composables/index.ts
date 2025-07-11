@@ -6,4 +6,5 @@
  */
 
 export { useWorkloadVisualizer } from './useWorkloadVisualizer'
-export { useRestaurantVisualizer } from './useRestaurantVisualizer' 
+export { useRestaurantVisualizer } from './useRestaurantVisualizer'
+export { useRestaurantSync } from './useRestaurantSync' 

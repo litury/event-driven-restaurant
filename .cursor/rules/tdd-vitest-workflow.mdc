@@ -1,0 +1,247 @@
+# TDD Workflow с Vitest
+
+## Основные принципы TDD
+
+### Цикл Red-Green-Refactor
+
+1. **Red** - Напиши failing тест для нового функционала
+2. **Green** - Напиши минимальный код для прохождения теста
+3. **Refactor** - Улучши код, сохраняя прохождение тестов
+
+### Порядок разработки
+
+1. **Интерфейсы** - определи TypeScript интерфейсы и типы
+2. **Тесты** - напиши тесты на основе интерфейсов
+3. **Реализация** - создай код для прохождения тестов
+4. **Рефакторинг** - оптимизируй код
+
+## Структура тестов
+
+### Именование файлов
+
+- `*.test.ts` - модульные тесты функций и классов
+- `*.spec.ts` - интеграционные тесты
+- `*.test.vue` - тесты Vue компонентов
+
+### Организация тестов
+
+```typescript
+// src/modules/auth/auth.test.ts
+import { describe, test, expect, beforeEach } from "vitest";
+import type { IAuthService } from "./interfaces/IAuthService";
+
+describe("AuthService", () => {
+  let authService: IAuthService;
+
+  beforeEach(() => {
+    // Arrange
+  });
+
+  test("should authenticate user with valid credentials", async () => {
+    // Arrange
+    const credentials = { login: "user", password: "pass" };
+
+    // Act
+    const result = await authService.loginAsync(credentials);
+
+    // Assert
+    expect(result.isSuccess).toBe(true);
+    expect(result.user).toBeDefined();
+  });
+});
+```
+
+## Паттерны тестирования
+
+### AAA Pattern (Arrange-Act-Assert)
+
+```typescript
+test("should calculate discount correctly", () => {
+  // Arrange - настройка данных
+  const price = 100;
+  const discountPercent = 20;
+
+  // Act - выполнение действия
+  const result = calculateDiscount(price, discountPercent);
+
+  // Assert - проверка результата
+  expect(result).toBe(80);
+});
+```
+
+### Мокирование зависимостей
+
+```typescript
+import { vi } from "vitest";
+
+// Мокирование API сервиса
+const mockApiService = {
+  getUserAsync: vi.fn().mockResolvedValue({ id: 1, name: "John" }),
+};
+
+test("should load user data", async () => {
+  // Arrange
+  const userService = new UserService(mockApiService);
+
+  // Act
+  const user = await userService.loadUserAsync(1);
+
+  // Assert
+  expect(mockApiService.getUserAsync).toHaveBeenCalledWith(1);
+  expect(user.name).toBe("John");
+});
+```
+
+### Тестирование Vue компонентов
+
+```typescript
+import { mount } from "@vue/test-utils";
+import { describe, test, expect } from "vitest";
+import UserCard from "./UserCard.vue";
+
+describe("UserCard", () => {
+  test("should display user name", () => {
+    // Arrange
+    const wrapper = mount(UserCard, {
+      props: { user: { name: "John Doe", email: "john@example.com" } },
+    });
+
+    // Assert
+    expect(wrapper.text()).toContain("John Doe");
+  });
+});
+```
+
+## Interface-First подход
+
+### Определение интерфейсов
+
+```typescript
+// interfaces/IUserService.ts
+export interface IUser {
+  readonly id: number;
+  readonly name: string;
+  readonly email: string;
+}
+
+export interface IUserService {
+  getUserAsync(_id: number): Promise<IUser>;
+  createUserAsync(_userData: Omit<IUser, "id">): Promise<IUser>;
+  updateUserAsync(_id: number, _userData: Partial<IUser>): Promise<void>;
+  deleteUserAsync(_id: number): Promise<void>;
+}
+```
+
+### Тесты на основе интерфейсов
+
+```typescript
+// Сначала пишем тест
+test("should create user and return with generated id", async () => {
+  // Arrange
+  const userData = { name: "Jane", email: "jane@example.com" };
+
+  // Act
+  const user = await userService.createUserAsync(userData);
+
+  // Assert
+  expect(user.id).toBeGreaterThan(0);
+  expect(user.name).toBe(userData.name);
+  expect(user.email).toBe(userData.email);
+});
+
+// Потом реализуем UserService для прохождения теста
+```
+
+## Настройка Vitest
+
+### Конфигурация vitest.config.ts
+
+```typescript
+import { defineConfig } from "vitest/config";
+import vue from "@vitejs/plugin-vue";
+
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    environment: "happy-dom",
+    globals: true,
+    setupFiles: ["./src/test-setup.ts"],
+  },
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./src"),
+    },
+  },
+});
+```
+
+### Scripts в package.json
+
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest --coverage"
+  }
+}
+```
+
+## Правила написания тестов
+
+### Именование тестов
+
+- Используй формат: `should [expected behavior] when [condition]`
+- Примеры:
+  - `should return user when valid id provided`
+  - `should throw error when user not found`
+  - `should update state when login successful`
+
+### Тестируемые сценарии
+
+1. **Happy Path** - нормальное выполнение
+2. **Edge Cases** - граничные случаи
+3. **Error Handling** - обработка ошибок
+4. **Integration** - взаимодействие компонентов
+
+### Mock стратегии
+
+- **Изолируй зависимости** - мокируй внешние сервисы
+- **Тестируй поведение** - проверяй вызовы методов
+- **Используй фабрики** - создавай тестовые данные через фабрики
+
+## Интеграция с IDE
+
+### VS Code snippets для TDD
+
+```json
+{
+  "TDD Test": {
+    "prefix": "tdd-test",
+    "body": [
+      "test('should $1 when $2', async () => {",
+      "  // Arrange",
+      "  $3",
+      "",
+      "  // Act",
+      "  const result = $4",
+      "",
+      "  // Assert",
+      "  expect(result).$5",
+      "})"
+    ]
+  }
+}
+```
+
+## Coverage требования
+
+- Минимум 80% покрытие для новых функций
+- 100% покрытие для критически важной бизнес-логики
+- Всегда тестируй error paths и edge cases
+  description:
+  globs:
+  alwaysApply: false
+
+---

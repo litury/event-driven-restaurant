@@ -1,0 +1,374 @@
+# 🎨 Система дизайна: Минималистичная монохромная палитра
+
+## 📋 **ОСНОВНЫЕ ПРИНЦИПЫ**
+
+### **1. Монохромная основа**
+- **Базовая палитра**: только оттенки серого (12 градаций)
+- **Акценты**: только для смысловой нагрузки (Purpose-driven colors)
+- **Никаких скруглений**: `border-radius: 0 !important`
+- **Четкие границы**: резкие тени без размытия
+
+### **2. Типографика**
+- **Основной шрифт**: `Fira Code` (моноширинный)
+- **Резервные шрифты**: `SF Mono`, `Monaco`, `Inconsolata`, `Roboto Mono`
+- **Размеры**: упрощенная шкала от `--text-xs` до `--text-4xl`
+- **Веса**: только `400`, `500`, `600`
+
+### **3. Spacing**
+- **Сетка**: 8px базовая единица
+- **Диапазон**: от `--spacing-1` (2px) до `--spacing-32` (64px)
+
+---
+
+## 🎯 **ЦВЕТОВАЯ ПАЛИТРА**
+
+### **МОНОХРОМНАЯ ОСНОВА**
+```css
+/* Используй для всех базовых элементов */
+--fg-primary: var(--color-black)      /* Основной текст */
+--fg-secondary: var(--color-gray-600) /* Вторичный текст */
+--fg-tertiary: var(--color-gray-500)  /* Третичный текст */
+
+--bg-primary: var(--color-white)      /* Основной фон */
+--bg-secondary: var(--color-gray-50)  /* Вторичный фон */
+--bg-tertiary: var(--color-gray-100)  /* Третичный фон */
+
+--border-primary: var(--color-black)    /* Основные границы */
+--border-secondary: var(--color-gray-300) /* Вторичные границы */
+--border-tertiary: var(--color-gray-200)  /* Третичные границы */
+```
+
+### **СТРАТЕГИЧЕСКИЕ АКЦЕНТЫ** (только для смысловой нагрузки)
+```css
+/* 🔴 КРИТИЧЕСКИЕ: ошибки, блокировки, просроченные заказы */
+--state-critical: var(--color-critical-600)
+--state-critical-bg: var(--color-critical-50)
+--state-critical-border: var(--color-critical-300)
+
+/* 🟡 ПРЕДУПРЕЖДЕНИЯ: ожидающие внимания, близкие к deadline */
+--state-caution: var(--color-caution-600)
+--state-caution-bg: var(--color-caution-50)
+--state-caution-border: var(--color-caution-300)
+
+/* 🟢 УСПЕХ: готовые заказы, завершенные операции */
+--state-positive: var(--color-positive-600)
+--state-positive-bg: var(--color-positive-50)
+--state-positive-border: var(--color-positive-300)
+
+/* 🔵 ИНФОРМАЦИЯ: метрики, подсказки, статистика */
+--state-informative: var(--color-informative-600)
+--state-informative-bg: var(--color-informative-50)
+--state-informative-border: var(--color-informative-300)
+```
+
+---
+
+## 🧩 **КОМПОНЕНТЫ**
+
+### **КАРТОЧКИ**
+```vue
+<!-- ✅ Правильно -->
+<div 
+  class="border p-4"
+  style="
+    background: var(--bg-primary);
+    border-color: var(--border-secondary);
+  "
+>
+  <h3 style="color: var(--fg-primary)">Заголовок</h3>
+  <p style="color: var(--fg-secondary)">Описание</p>
+</div>
+
+<!-- ❌ Неправильно -->
+<div class="rounded-lg bg-blue-100 p-4">
+  <h3 class="text-blue-900">Заголовок</h3>
+</div>
+```
+
+### **КНОПКИ**
+```vue
+<!-- ✅ Основная кнопка -->
+<button 
+  class="px-3 py-2 font-mono text-xs font-medium uppercase border transition-minimal"
+  style="
+    background: var(--state-positive);
+    color: var(--bg-primary);
+    border-color: var(--state-positive);
+  "
+>
+  ЗАПУСК
+</button>
+
+<!-- ✅ Вторичная кнопка -->
+<button 
+  class="p-2 border transition-minimal"
+  style="
+    background: var(--bg-secondary);
+    border-color: var(--border-secondary);
+    color: var(--fg-primary);
+  "
+>
+  <Icon :size="20" />
+</button>
+```
+
+### **СОСТОЯНИЯ ДАННЫХ**
+```vue
+<!-- ✅ Метрики с цветовой индикацией -->
+<div class="text-center">
+  <div 
+    class="font-semibold text-lg"
+    :style="{
+      color: value > 70 
+        ? 'var(--state-positive)' 
+        : value > 40 
+        ? 'var(--state-caution)' 
+        : 'var(--state-critical)'
+    }"
+  >
+    {{ value }}%
+  </div>
+  <div style="color: var(--fg-secondary)">ЭФФЕКТИВНОСТЬ</div>
+</div>
+```
+
+### **ЛОГИ И СОБЫТИЯ**
+```vue
+<!-- ✅ Лог-запись -->
+<div class="flex items-start gap-2 text-xs font-mono">
+  <span style="color: var(--fg-tertiary)" class="flex-shrink-0">
+    {{ formatTime(timestamp) }}
+  </span>
+  <span 
+    :style="{ color: getEventColor(type) }"
+    class="flex-shrink-0"
+  >
+    {{ type.toUpperCase() }}:
+  </span>
+  <span style="color: var(--fg-secondary)" class="flex-1">
+    {{ message }}
+  </span>
+</div>
+```
+
+---
+
+## 🎨 **ЦВЕТОВЫЕ ФУНКЦИИ**
+
+### **Для Vue компонентов**
+```typescript
+// ✅ Функция определения цвета по значению
+function getStatusColor(value: number): string {
+  if (value > 80) return 'var(--state-critical)';
+  if (value > 50) return 'var(--state-caution)';
+  if (value > 20) return 'var(--state-positive)';
+  return 'var(--fg-tertiary)';
+}
+
+// ✅ Функция цвета для типов событий
+function getEventColor(eventType: string): string {
+  switch (eventType) {
+    case 'order': return 'var(--state-informative)';
+    case 'assignment': return 'var(--state-caution)';
+    case 'cooking': return 'var(--state-critical)';
+    case 'complete': return 'var(--state-positive)';
+    default: return 'var(--fg-primary)';
+  }
+}
+```
+
+---
+
+## 🌙 **ТЕМНАЯ ТЕМА**
+
+### **Автоматическое переключение**
+```vue
+<!-- ✅ Переключатель темы -->
+<button @click="toggleTheme">
+  <Sun v-if="isDark" :size="20" />
+  <Moon v-else :size="20" />
+</button>
+
+<script setup>
+function toggleTheme() {
+  isDark.value = !isDark.value;
+  document.documentElement.setAttribute(
+    'data-theme', 
+    isDark.value ? 'dark' : 'light'
+  );
+}
+</script>
+```
+
+### **Инвертированные цвета**
+```css
+[data-theme="dark"] {
+  --fg-primary: var(--color-white);
+  --fg-secondary: var(--color-gray-400);
+  --bg-primary: var(--color-black);
+  --bg-secondary: var(--color-gray-950);
+  --border-primary: var(--color-white);
+  --border-secondary: var(--color-gray-700);
+  
+  /* Стратегические цвета остаются теми же */
+  --state-critical-bg: var(--color-critical-950);
+  --state-caution-bg: var(--color-caution-950);
+}
+```
+
+---
+
+## 🚫 **ЗАПРЕЩЕНО**
+
+### **❌ Цвета**
+```vue
+<!-- НЕ используй произвольные цвета -->
+<div class="bg-blue-500 text-white rounded-lg">
+<div style="background: #3b82f6; color: white">
+<div style="background: blue">
+```
+
+### **❌ Скругления**
+```vue
+<!-- НЕ используй скругления -->
+<div class="rounded-lg">
+<div style="border-radius: 8px">
+<button class="rounded-full">
+```
+
+### **❌ Размытые тени**
+```vue
+<!-- НЕ используй размытые тени -->
+<div class="shadow-lg drop-shadow-xl">
+<div style="box-shadow: 0 10px 25px rgba(0,0,0,0.1)">
+```
+
+---
+
+## ✅ **РЕКОМЕНДАЦИИ**
+
+### **1. Иерархия информации**
+```vue
+<!-- Используй монохромную иерархию -->
+<h1 style="color: var(--fg-primary)">Главный заголовок</h1>
+<h2 style="color: var(--fg-secondary)">Подзаголовок</h2>
+<p style="color: var(--fg-tertiary)">Дополнительная информация</p>
+```
+
+### **2. Состояния интерфейса**
+```vue
+<!-- Используй стратегические цвета только для состояний -->
+<div :style="{ 
+  color: isError ? 'var(--state-critical)' : 'var(--fg-primary)' 
+}">
+  {{ message }}
+</div>
+```
+
+### **3. Анимации**
+```vue
+<!-- Используй минимальные переходы -->
+<button class="transition-minimal hover:opacity-80">
+  Кнопка
+</button>
+```
+
+---
+
+## 🎯 **ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ**
+
+### **Карточка метрики**
+```vue
+<div 
+  class="border p-3"
+  style="
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+  "
+>
+  <div class="flex justify-between items-center">
+    <span style="color: var(--fg-secondary)" class="font-mono text-xs">
+      ЭФФЕКТИВНОСТЬ:
+    </span>
+    <span 
+      class="font-mono text-sm font-semibold"
+      :style="{
+        color: efficiency > 70 
+          ? 'var(--state-positive)' 
+          : 'var(--state-caution)'
+      }"
+    >
+      {{ efficiency }}%
+    </span>
+  </div>
+</div>
+```
+
+### **Список событий**
+```vue
+<div 
+  class="space-y-1 p-2 border"
+  style="
+    background: var(--bg-secondary); 
+    border-color: var(--border-secondary)
+  "
+>
+  <div 
+    v-for="event in events" 
+    class="flex items-center gap-2 text-xs font-mono"
+  >
+    <span style="color: var(--fg-tertiary)">{{ event.time }}</span>
+    <span :style="{ color: getEventColor(event.type) }">
+      {{ event.type.toUpperCase() }}:
+    </span>
+    <span style="color: var(--fg-secondary)">{{ event.message }}</span>
+  </div>
+</div>
+```
+
+---
+
+## 🔧 **УТИЛИТЫ**
+
+### **CSS классы**
+```css
+/* Готовые утилитарные классы */
+.text-critical { color: var(--state-critical); }
+.text-caution { color: var(--state-caution); }
+.text-positive { color: var(--state-positive); }
+.text-informative { color: var(--state-informative); }
+
+.bg-critical { background: var(--state-critical-bg); }
+.bg-caution { background: var(--state-caution-bg); }
+.bg-positive { background: var(--state-positive-bg); }
+.bg-informative { background: var(--state-informative-bg); }
+
+.transition-minimal { transition: all 0.15s ease-out; }
+.font-mono { font-family: var(--font-mono); }
+```
+
+---
+
+## 📱 **АДАПТИВНОСТЬ**
+
+### **Принципы**
+1. **Mobile First**: начинай с мобильной версии
+2. **Минимальные брейкпоинты**: используй только необходимые
+3. **Гибкие сетки**: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+4. **Компактность**: формы над контентом, иконки вместо текста
+
+### **Пример адаптивного компонента**
+```vue
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="space-y-4">
+    <!-- Контент для мобильных и планшетов -->
+  </div>
+  <div class="hidden lg:block">
+    <!-- Дополнительный контент только для десктопа -->
+  </div>
+</div>
+```
+
+---
+
+**Помни**: Эта система создана для **функциональности и читаемости**, а не для украшения. Каждый цвет должен нести смысловую нагрузку!

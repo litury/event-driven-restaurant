@@ -1,148 +1,147 @@
 <template>
   <div
-    class="border p-4 space-y-3"
+    class="border p-4 space-y-3 transition-minimal"
     style="background: var(--bg-secondary); border-color: var(--border-primary)"
   >
     <!-- Заголовок заказа с VIP индикатором -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span
-          class="font-mono text-sm font-semibold tracking-wide"
+          class="font-mono text-sm font-semibold tracking-wide uppercase"
           style="color: var(--fg-primary)"
         >
-          ЗАКАЗ #{{ order.orderNumber }}
+          ЗАКАЗ #{{ order.orderId }}
         </span>
         <Crown
-          v-if="order.customerType === 'VIP'"
+          v-if="order.isVipCustomer"
           :size="16"
           style="color: var(--state-caution)"
           title="VIP клиент"
         />
       </div>
 
-      <!-- Статус приоритета -->
+      <!-- Статус заказа -->
       <div
         class="px-2 py-1 border text-xs font-mono font-semibold tracking-wide uppercase"
         :style="{
-          backgroundColor: priorityColor,
+          backgroundColor: statusColor,
           color: 'var(--bg-primary)',
-          borderColor: priorityColor,
+          borderColor: statusColor,
         }"
       >
-        {{ priorityLabel }}
+        {{ statusLabel }}
       </div>
     </div>
 
-    <!-- Детали заказа -->
-    <div class="grid grid-cols-2 gap-4 text-xs font-mono">
-      <!-- Тип блюда с иконкой -->
+    <!-- Описание блюда -->
+    <div class="space-y-2">
       <div class="flex items-center gap-2">
-        <component
-          :is="dishIcon"
-          :size="14"
-          style="color: var(--state-informative)"
-        />
-        <span style="color: var(--fg-primary)">{{ order.dishType }}</span>
+        <UtensilsCrossed :size="14" style="color: var(--state-informative)" />
+        <span class="font-mono text-sm" style="color: var(--fg-primary)">
+          {{ order.dishDescription }}
+        </span>
       </div>
 
       <!-- Тип клиента -->
       <div class="flex items-center gap-2">
         <User :size="14" style="color: var(--fg-secondary)" />
         <span
+          class="font-mono text-xs tracking-wide"
           style="color: var(--fg-secondary)"
-          :class="order.customerType === 'VIP' ? 'font-semibold' : ''"
+          :class="order.isVipCustomer ? 'font-semibold' : ''"
         >
-          {{ order.customerType }}
-        </span>
-      </div>
-
-      <!-- Сложность -->
-      <div class="flex items-center gap-2">
-        <Gauge :size="14" style="color: var(--fg-secondary)" />
-        <span style="color: var(--fg-secondary)">{{ order.complexity }}</span>
-      </div>
-
-      <!-- Время готовки -->
-      <div class="flex items-center gap-2">
-        <Clock :size="14" style="color: var(--fg-secondary)" />
-        <span style="color: var(--fg-secondary)">
-          {{ Math.round(order.estimatedCookingTimeMs / 1000) }}с
+          {{ order.isVipCustomer ? "VIP КЛИЕНТ" : "ОБЫЧНЫЙ КЛИЕНТ" }}
         </span>
       </div>
     </div>
 
-    <!-- Дедлайн и время -->
+    <!-- Временные данные -->
     <div class="space-y-2">
-      <div class="flex items-center justify-between text-xs font-mono">
+      <div
+        v-if="order.createdAt"
+        class="flex items-center justify-between text-xs font-mono"
+      >
         <div class="flex items-center gap-2">
           <Timer :size="14" style="color: var(--fg-secondary)" />
-          <span style="color: var(--fg-secondary)">ДЕДЛАЙН:</span>
-        </div>
-        <span class="font-semibold" :style="{ color: deadlineStatusColor }">
-          {{ deadlineStatus }}
-        </span>
-      </div>
-
-      <!-- Приоритет с объяснением -->
-      <div class="flex items-center justify-between text-xs font-mono">
-        <div class="flex items-center gap-2">
-          <Target :size="14" style="color: var(--fg-secondary)" />
-          <span style="color: var(--fg-secondary)">ПРИОРИТЕТ:</span>
+          <span style="color: var(--fg-secondary)">СОЗДАН:</span>
         </div>
         <span class="font-semibold" style="color: var(--fg-primary)">
-          {{ order.priority.toFixed(1) }}
+          {{ formatTime(order.createdAt) }}
+        </span>
+      </div>
+
+      <div
+        v-if="order.updatedAt"
+        class="flex items-center justify-between text-xs font-mono"
+      >
+        <div class="flex items-center gap-2">
+          <Clock :size="14" style="color: var(--fg-secondary)" />
+          <span style="color: var(--fg-secondary)">ОБНОВЛЕН:</span>
+        </div>
+        <span class="font-semibold" style="color: var(--fg-secondary)">
+          {{ formatTime(order.updatedAt) }}
         </span>
       </div>
     </div>
 
-    <!-- Специальные требования для VIP -->
+    <!-- Статус выполнения -->
     <div
-      v-if="order.specialRequests && order.specialRequests.length > 0"
-      class="pt-3 border-t"
+      class="flex items-center justify-between text-xs font-mono pt-2 border-t"
       style="border-color: var(--border-secondary)"
     >
-      <div class="flex items-start gap-2 text-xs font-mono">
-        <Star :size="14" style="color: var(--state-caution)" />
-        <div>
-          <span class="font-semibold" style="color: var(--state-caution)">
-            ОСОБЫЕ ТРЕБОВАНИЯ:
-          </span>
-          <div class="mt-1 space-y-1">
-            <div
-              v-for="request in order.specialRequests"
-              :key="request"
-              style="color: var(--fg-tertiary)"
-            >
-              • {{ request }}
-            </div>
-          </div>
-        </div>
+      <div class="flex items-center gap-2">
+        <Activity :size="14" style="color: var(--fg-secondary)" />
+        <span style="color: var(--fg-secondary)">СТАТУС:</span>
       </div>
+      <span class="font-semibold" :style="{ color: statusColor }">
+        {{ statusDescription }}
+      </span>
     </div>
 
-    <!-- Образовательная информация о CEP -->
+    <!-- Зона размещения (если есть) -->
+    <div
+      v-if="assignedZone"
+      class="flex items-center justify-between text-xs font-mono"
+    >
+      <div class="flex items-center gap-2">
+        <MapPin :size="14" style="color: var(--fg-secondary)" />
+        <span style="color: var(--fg-secondary)">ЗОНА:</span>
+      </div>
+      <span class="font-semibold" style="color: var(--fg-primary)">
+        {{ assignedZone }}
+      </span>
+    </div>
+
+    <!-- Образовательная информация о событийной синхронизации -->
     <div
       class="pt-3 border-t text-xs font-mono"
       style="border-color: var(--border-secondary)"
     >
       <div class="flex items-center gap-2 mb-1">
         <BookOpen :size="12" style="color: var(--state-informative)" />
-        <span class="font-semibold" style="color: var(--state-informative)">
-          CEP ПРИНЦИПЫ:
+        <span
+          class="font-semibold uppercase"
+          style="color: var(--state-informative)"
+        >
+          ДЗ-3 СОБЫТИЙНАЯ СИНХРОНИЗАЦИЯ:
         </span>
       </div>
       <div class="space-y-1" style="color: var(--fg-tertiary)">
         <div class="flex items-center gap-1">
           <Database :size="10" />
-          <span>Событие неизменяемо после создания</span>
+          <span>{{
+            order.isVipCustomer
+              ? "VIP → Отдельная зона"
+              : "Обычный → Общая зона"
+          }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <ArrowUp :size="10" />
-          <span>Меньший приоритет = выше в очереди</span>
+          <GitBranch :size="10" />
+          <span>API → ChangeLog → ZoneSync</span>
         </div>
         <div class="flex items-center gap-1">
-          <Activity :size="10" />
-          <span>Время обработки влияет на расчет приоритета</span>
+          <Zap :size="10" />
+          <span>Асинхронная обработка событий</span>
         </div>
       </div>
     </div>
@@ -154,116 +153,105 @@ import { computed } from "vue";
 import {
   Crown,
   User,
-  Gauge,
   Clock,
   Timer,
-  Target,
-  Star,
+  Activity,
+  MapPin,
   BookOpen,
   Database,
-  ArrowUp,
-  Activity,
-  Pizza,
-  Beef,
-  Salad,
-  Cake,
+  GitBranch,
+  Zap,
+  UtensilsCrossed,
 } from "lucide-vue-next";
-
-/**
- * Интерфейс заказа ресторана
- */
-interface RestaurantOrder {
-  orderNumber: number;
-  customerType: "VIP" | "обычный" | "доставка";
-  dishType: "пицца" | "бургер" | "салат" | "десерт";
-  complexity: "простое" | "среднее" | "сложное";
-  estimatedCookingTimeMs: number;
-  estimatedProcessingTimeMs: number;
-  deadline: number;
-  enqueuedAt: number;
-  specialRequests?: string[];
-  priority: number;
-}
+import type { IRestaurantOrder } from "../../WorkloadBalancing/interfaces/IRestaurantSyncModel";
 
 interface Props {
-  order: RestaurantOrder;
+  order: IRestaurantOrder;
+  assignedZone?: string;
 }
 
 const props = defineProps<Props>();
 
 /**
- * Иконка блюда
+ * Форматирование времени
  */
-const dishIcon = computed(() => {
-  const iconMap = {
-    пицца: Pizza,
-    бургер: Beef,
-    салат: Salad,
-    десерт: Cake,
-  };
-  return iconMap[props.order.dishType] || Pizza;
-});
-
-/**
- * Статус дедлайна
- */
-const deadlineStatus = computed(() => {
-  const now = Date.now();
-  const deadline = props.order.deadline;
-  const timeUntilDeadline = deadline - now;
-
-  if (timeUntilDeadline < 0) {
-    return "ПРОСРОЧЕН";
-  } else if (timeUntilDeadline < 5000) {
-    return "СРОЧНО";
-  } else if (timeUntilDeadline < 15000) {
-    return "СКОРО";
-  } else {
-    return "В НОРМЕ";
+function formatTime(date: Date | undefined): string {
+  if (!date) {
+    return "—";
   }
-});
+
+  // Проверяем, что это валидная дата
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 /**
- * Цвет статуса дедлайна
+ * Метка статуса
  */
-const deadlineStatusColor = computed(() => {
-  const status = deadlineStatus.value;
-  switch (status) {
-    case "ПРОСРОЧЕН":
-      return "var(--state-critical)";
-    case "СРОЧНО":
-      return "var(--state-critical)";
-    case "СКОРО":
-      return "var(--state-caution)";
+const statusLabel = computed(() => {
+  switch (props.order.status) {
+    case "pending":
+      return "ОЖИДАЕТ";
+    case "preparing":
+      return "ГОТОВИТСЯ";
+    case "ready":
+      return "ГОТОВ";
+    case "served":
+      return "ПОДАН";
     default:
-      return "var(--state-positive)";
+      return "НЕИЗВЕСТНО";
   }
 });
 
 /**
- * Метка приоритета
+ * Описание статуса
  */
-const priorityLabel = computed(() => {
-  const priority = props.order.priority;
-  if (priority < 1) return "КРИТИЧНО";
-  if (priority < 2) return "ВЫСОКИЙ";
-  if (priority < 5) return "СРЕДНИЙ";
-  return "НИЗКИЙ";
+const statusDescription = computed(() => {
+  switch (props.order.status) {
+    case "pending":
+      return "В очереди на обработку";
+    case "preparing":
+      return "Выполняется поваром";
+    case "ready":
+      return "Готов к выдаче";
+    case "served":
+      return "Подан клиенту";
+    default:
+      return "Неопределенное состояние";
+  }
 });
 
 /**
- * Цвет приоритета
+ * Цвет статуса
  */
-const priorityColor = computed(() => {
-  const priority = props.order.priority;
-  if (priority < 1) return "var(--state-critical)";
-  if (priority < 2) return "var(--state-caution)";
-  if (priority < 5) return "var(--state-informative)";
-  return "var(--fg-tertiary)";
+const statusColor = computed(() => {
+  switch (props.order.status) {
+    case "pending":
+      return "var(--state-caution)";
+    case "preparing":
+      return "var(--state-informative)";
+    case "ready":
+      return "var(--state-positive)";
+    case "served":
+      return "var(--fg-tertiary)";
+    default:
+      return "var(--fg-tertiary)";
+  }
 });
 </script>
 
 <style scoped>
+.transition-minimal {
+  transition: all 0.15s ease-out;
+}
+
 .fade-in {
   animation: fade-in 0.3s ease-out;
 }
