@@ -154,6 +154,9 @@ vite.config.local.*
 # ====================================
 # Package Manager Locks (keep one)
 # ====================================
+# Временно исключаем package-lock.json из-за Rollup bug в GitHub Actions
+package-lock.json
+
 # Uncomment if using yarn instead of npm
 # package-lock.json
 
