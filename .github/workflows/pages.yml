@@ -27,8 +27,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      # 🔧 Агрессивная очистка для Rollup bug
+      - name: Clean npm cache and install
+        run: |
+          npm cache clean --force
+          rm -rf node_modules package-lock.json
+          npm install
 
       # 🧪 Запускаем тесты
       - name: Run tests
@@ -54,8 +58,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      # 🔧 Агрессивная очистка для Rollup bug
+      - name: Clean npm cache and install
+        run: |
+          npm cache clean --force
+          rm -rf node_modules package-lock.json
+          npm install
 
       - name: Build project
         run: npm run build
