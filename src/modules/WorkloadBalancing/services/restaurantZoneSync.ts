@@ -104,7 +104,10 @@ export class RestaurantZoneSync implements IRestaurantZoneSync {
         }
       }
 
-      return queueState
+      // ВАЖНО: сохраняем состояние очереди в p_zoneStates
+      this.p_zoneStates.set(order.orderId, queueState)
+
+      return { ...queueState }
     }
 
     // Выбираем первый доступный стол

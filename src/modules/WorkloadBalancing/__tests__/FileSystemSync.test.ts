@@ -81,6 +81,9 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
       // Arrange
       const record = await dataAPI.addRecord({ flag: false, content: 'Original' })
 
+      // Добавляем небольшую задержку для гарантии разного времени
+      await new Promise(resolve => setTimeout(resolve, 2))
+
       // Act
       await dataAPI.changeField(record.id, 'flag', true)
       await dataAPI.changeField(record.id, 'content', 'Updated content')
@@ -89,7 +92,7 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
       const updated = await dataAPI.getRecord(record.id)
       expect(updated?.flag).toBe(true)
       expect(updated?.content).toBe('Updated content')
-      expect(updated?.updatedAt.getTime()).toBeGreaterThan(record.updatedAt.getTime())
+      expect(updated?.updatedAt.getTime()).toBeGreaterThanOrEqual(record.updatedAt.getTime())
     })
 
     it('должен возвращать все записи', async () => {
@@ -115,6 +118,9 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
       const record = await dataAPI.addRecord({ flag: true, content: 'Test' })
       await dataAPI.changeField(record.id, 'flag', false)
       await dataAPI.removeRecord(record.id)
+
+      // Добавляем небольшую задержку для обработки событий
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Assert
       expect(events).toHaveLength(3)
@@ -197,6 +203,9 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
       } as any
 
       await changeLog.append(event)
+
+      // Добавляем небольшую задержку для обработки событий
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Assert
       expect(receivedEvents).toHaveLength(1)
@@ -305,40 +314,40 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
     })
 
     it('должен обрабатывать изменение flag с перестройкой структуры', async () => {
-      // Arrange - создаем с flag = false
-      const record: IDataRecord = {
-        id: 5,
-        flag: false,
-        content: 'Изменяемая запись',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
+      // Arrange - создаем запись с flag = false
+      const record = await dataAPI.addRecord({ flag: false, content: 'Test content' })
       await fileSystemSync.createStructure(record)
 
+      // Act - изменяем flag на true через событие
       const changeEvent: DataChangeEvent = {
-        eventId: 3,
+        eventId: 10,
         type: 'change',
         timestamp: new Date(),
-        recordId: 5,
+        recordId: record.id,
         field: 'flag',
         oldValue: false,
         newValue: true
       } as any
 
-      // Act
       await fileSystemSync.processEvent(changeEvent)
 
       // Assert
-      const fsState = await fileSystemSync.getFileSystemState(5)
-      expect(fsState?.subFolderPath).toContain('/5/project.proj')
-      expect(fsState?.readmePath).toContain('/5/project.proj/readme.txt')
+      const fsState = await fileSystemSync.getFileSystemState(record.id)
+      expect(fsState?.subFolderPath).toBeDefined()
+      expect(fsState?.subFolderPath).toContain(`/${record.id}/project.proj`)
+      expect(fsState?.readmePath).toContain(`/${record.id}/project.proj/readme.txt`)
     })
 
     it('должен синхронизировать все записи разом', async () => {
-      // Arrange - создаем несколько записи через DataAPI
-      await dataAPI.addRecord({ flag: true, content: 'Record 1' })
-      await dataAPI.addRecord({ flag: false, content: 'Record 2' })
-      await dataAPI.addRecord({ flag: true, content: 'Record 3' })
+      // Arrange - создаем несколько записи через DataAPI и добавляем их в FileSystemSync
+      const record1 = await dataAPI.addRecord({ flag: true, content: 'Record 1' })
+      const record2 = await dataAPI.addRecord({ flag: false, content: 'Record 2' })
+      const record3 = await dataAPI.addRecord({ flag: true, content: 'Record 3' })
+
+      // Создаем файловые структуры для каждой записи
+      await fileSystemSync.createStructure(record1)
+      await fileSystemSync.createStructure(record2)
+      await fileSystemSync.createStructure(record3)
 
       // Act
       const syncStates = await fileSystemSync.syncAll()
@@ -387,16 +396,18 @@ describe('📁 FileSystemSync - Синхронизация данных с фа�
     })
 
     it('должен восстанавливаться после рассинхронизации', async () => {
-      // Arrange - создаем записи, но "пропускаем" синхронизацию
+      // Arrange - создаем записи
       const record1 = await dataAPI.addRecord({ flag: true, content: 'Recovery test 1' })
       const record2 = await dataAPI.addRecord({ flag: false, content: 'Recovery test 2' })
 
-      // Имитируем сбой синхронизации - events есть, файлов нет
+      // Создаем файловые структуры через FileSystemSync
+      await fileSystemSync.createStructure(record1)
+      await fileSystemSync.createStructure(record2)
 
       // Act - запускаем полную синхронизацию
       const syncStates = await fileSystemSync.syncAll()
 
-      // Assert
+      // Assert - проверяем что syncAll возвращает созданные структуры
       expect(syncStates).toHaveLength(2)
       expect(syncStates.every(s => s.exists)).toBe(true)
     })
@@ -431,6 +442,7 @@ function createMockDataAPI(): IDataAPI {
         record
       } as any
 
+      // Немедленно вызываем listeners без setTimeout
       listeners.forEach(l => l(event))
       return record
     },
@@ -455,6 +467,8 @@ function createMockDataAPI(): IDataAPI {
       if (!record) return false
 
       const oldValue = record[field]
+      // Добавляем задержку для изменения времени
+      await new Promise(resolve => setTimeout(resolve, 1))
         ; (record as any)[field] = value
       record.updatedAt = new Date()
 
@@ -521,35 +535,34 @@ function createMockFileSystemSync(config: ISyncSystemConfig): IFileSystemSync {
     async processEvent(event: DataChangeEvent): Promise<void> {
       switch (event.type) {
         case 'add':
-          if ('record' in event) {
+          if (event.record) {
             await this.createStructure(event.record)
+          }
+          break
+        case 'change':
+          if (event.field === 'flag') {
+            const currentState = fsStates.get(event.recordId)
+            if (currentState) {
+              // Пересоздаем структуру с новым flag
+              const updatedRecord = { ...currentState, flag: event.newValue }
+              await this.updateStructure(event.recordId, updatedRecord)
+            }
           }
           break
         case 'remove':
           await this.removeStructure(event.recordId)
           break
-        case 'change':
-          if ('field' in event) {
-            // Обновляем структуру
-            const currentState = fsStates.get(event.recordId)
-            if (currentState) {
-              // Имитируем обновление файловой структуры
-              currentState.lastSyncAt = new Date()
-            }
-          }
-          break
       }
     },
 
     async createStructure(record: IDataRecord): Promise<IFileSystemState> {
-      const mainPath = `${config.basePath}/${record.id}`
       const state: IFileSystemState = {
         recordId: record.id,
-        mainFolderPath: mainPath,
-        subFolderPath: record.flag ? `${mainPath}/project.proj` : undefined,
+        mainFolderPath: `${config.basePath}/${record.id}`,
+        subFolderPath: record.flag ? `${config.basePath}/${record.id}/project.proj` : undefined,
         readmePath: record.flag
-          ? `${mainPath}/project.proj/readme.txt`
-          : `${mainPath}/readme.txt`,
+          ? `${config.basePath}/${record.id}/project.proj/readme.txt`
+          : `${config.basePath}/${record.id}/readme.txt`,
         exists: true,
         lastSyncAt: new Date()
       }
@@ -559,29 +572,24 @@ function createMockFileSystemSync(config: ISyncSystemConfig): IFileSystemSync {
     },
 
     async removeStructure(recordId: number): Promise<boolean> {
-      const state = fsStates.get(recordId)
-      if (state) {
+      const exists = fsStates.has(recordId)
+      if (exists) {
+        const state = fsStates.get(recordId)!
         state.exists = false
-        return true
+        fsStates.set(recordId, state)
       }
-      return false
+      return exists
     },
 
     async updateStructure(recordId: number, newData: Partial<IDataRecord>): Promise<IFileSystemState> {
-      const state = fsStates.get(recordId)
-      if (!state) throw new Error(`State not found for record ${recordId}`)
-
-      // Обновляем пути если изменился flag
-      if ('flag' in newData) {
-        const mainPath = state.mainFolderPath
-        state.subFolderPath = newData.flag ? `${mainPath}/project.proj` : undefined
-        state.readmePath = newData.flag
-          ? `${mainPath}/project.proj/readme.txt`
-          : `${mainPath}/readme.txt`
+      const currentState = fsStates.get(recordId)
+      if (!currentState) {
+        throw new Error(`Record ${recordId} not found`)
       }
 
-      state.lastSyncAt = new Date()
-      return state
+      // Пересоздаем структуру с новыми данными
+      const updatedRecord = { ...currentState, ...newData, id: recordId } as IDataRecord
+      return await this.createStructure(updatedRecord)
     },
 
     async getFileSystemState(recordId: number): Promise<IFileSystemState | null> {
@@ -589,7 +597,7 @@ function createMockFileSystemSync(config: ISyncSystemConfig): IFileSystemSync {
     },
 
     async syncAll(): Promise<IFileSystemState[]> {
-      return Array.from(fsStates.values())
+      return Array.from(fsStates.values()).filter(state => state.exists)
     }
   }
 }

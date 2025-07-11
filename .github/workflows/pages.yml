@@ -1,4 +1,4 @@
-name: Deploy & Release
+name: Deploy Real Project
 
 on:
   push:
@@ -6,25 +6,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # 🧪 Тестирование и проверка качества
+  # 🧪 Новая job для тестирования
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,10 +39,9 @@ jobs:
       - name: Lint check
         run: npm run lint
 
-  # 🚀 Build and Deploy (всегда деплоим при пуше в main)
+  # 🚀 Deploy только если тесты прошли
   deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main'
+    needs: test # ⭐ Ключевая строка!
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -78,58 +73,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      # 🎉 Уведомление об успешном деплое
-      - name: Create deployment comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const deployUrl = '${{ steps.deployment.outputs.page_url }}';
-            const commitSha = context.sha.substring(0, 7);
-
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `🚀 **Deploy успешно завершен!**\n\n🌐 **Live Demo:** ${deployUrl}\n\n✨ **Commit:** ${commitSha}\n📝 **Branch:** ${context.ref}`
-            });
-
-  # 🏷️ Semantic Release (опционально, только если нужен релиз)
-  release:
-    needs: [test, deploy]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'feat:')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run release
-
-  # 📊 Quality Report
-  quality-report:
-    needs: [test, deploy]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Quality Summary
-        run: |
-          echo "## 📊 Quality Report" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 📝 Lint: Clean" >> $GITHUB_STEP_SUMMARY
-          echo "- 🚀 Deploy: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 🌐 Demo: Доступно на GitHub Pages" >> $GITHUB_STEP_SUMMARY

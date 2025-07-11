@@ -190,7 +190,7 @@ export interface IRestaurantZoneState {
   assignedWaiter?: string
 
   /** Статус размещения */
-  placementStatus: 'placed' | 'occupied' | 'ready_for_service' | 'cleared'
+  placementStatus: 'placed' | 'occupied' | 'ready_for_service' | 'cleared' | 'queued'
 
   /** Время размещения в зоне */
   placedAt: Date
@@ -198,11 +198,16 @@ export interface IRestaurantZoneState {
   /** Время последнего обновления */
   lastUpdatedAt: Date
 
-  /** Дополнительные метаданные */
+  /** Метаданные заказа */
   metadata: {
+    /** Есть ли особые требования к блюду */
     hasSpecialRequests: boolean
+    /** Ожидаемое время обслуживания в миллисекундах */
     estimatedServiceTime: number
+    /** Фактическое время обслуживания в миллисекундах */
     actualServiceTime?: number
+    /** Позиция в очереди (если заказ в очереди) */
+    queuePosition?: number
   }
 }
 
